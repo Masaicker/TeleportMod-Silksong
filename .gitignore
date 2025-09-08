@@ -1,0 +1,58 @@
+# Visual Studio / Rider
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+.vs/
+.idea/
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+
+# .NET Core
+*.lock.json
+project.lock.json
+artifacts/
+
+# NuGet
+*.nupkg
+packages/
+*.nuspec
+
+# Rider
+.idea/
+*.sln.iml
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# BepInEx / Game specific
+*.pdb
+*.config
+BepInEx/
+config/
+plugin_configs/
+
+# Claude specific
+.claude/
+.spec-workflow/
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
