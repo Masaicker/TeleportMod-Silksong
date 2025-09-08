@@ -51,6 +51,7 @@ plugin_configs/
 # Claude specific
 .claude/
 .spec-workflow/
+CLAUDE.md
 
 # Temporary files
 *.tmp
