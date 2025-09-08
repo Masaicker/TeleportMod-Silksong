@@ -8,20 +8,24 @@ A simple teleportation mod for Hollow Knight: Silksong.
 
 #### Keyboard Controls
 - `Ctrl + 1~5`: Save position 🔊 Sound effect
-- `Alt + 1~5`: Load position
+- `Alt + 1~5`: Load position (no save data: auto teleport to bench)
 - `Alt + 6`: **Safe respawn** (cycle entry points)
+- `Alt + 7`: **Teleport to bench** (last respawn point)
 - `Alt + 0`: **Reset all coordinates**
-- No save data: Auto teleport to bench
+- `Alt + -`: **Emergency teleport** (to preset safe location) [minus key]
+- **🆘 `Ctrl + F9`: Emergency return to main menu** (character out of control/stuck)
 
 ```
-💡 Note: All key combinations are fully customizable in the config file, including modifier keys and function keys!
+💡 Note: Default uses main keyboard number keys, NOT numpad keys. All key combinations are fully customizable in the config file, including modifier keys and function keys!
 ```
 
 #### Gamepad Controls
 - `LB + RB + Direction/A`: Teleport to slot
 - `LB + Start + Direction/A`: Save to slot 🔊 Sound effect
 - `LB + RB + Y`: **Safe respawn**
+- `LB + RB + B`: **Teleport to bench** (last respawn point)
 - `LB + Select + Start`: **Reset all coordinates**
+- `LB + RB + X`: **Emergency teleport** (to preset safe location)
 
 ```
 💡 Function Notes: Safe respawn is for escaping when stuck in bugs, reset coordinates is for clearing all data when stuck.
@@ -46,19 +50,22 @@ A simple teleportation mod for Hollow Knight: Silksong.
 ❌ During loading/saving processes  
 ❌ During any special states or triggered events
 
-#### Usage frequency limits:
-⏱️ Avoid multiple teleportations in short time (like teleporting multiple times within 1 second)
-
-#### Key information:
-🎹 Default keyboard keys are main keyboard numbers `1-6`, `0`, **NOT numpad keys**  
-🎹 To use numpad, manually change to `Keypad1-6` in config file
+#### Important Notes:
+⏱️ Avoid multiple teleportations in short time (like teleporting multiple times within 1 second)  
+⚠️ Do not teleport immediately after death
 
 ### Troubleshooting:
 
-🆘 **If stuck/camera lost:**
+🆘 **If stuck/camera lost/character floating and unable to open menu:**
 
-1. First try: `Alt + 6` **(Safe Respawn)** (Keyboard: `Alt+6`, Gamepad: `LB+RB+Y`)
-2. Still not working, completely unresponsive: **Restart the game**
+1. First try: **Safe Respawn** (Keyboard: `Alt+6`, Gamepad: `LB+RB+Y`), if teleported to entry point, then use load position as needed  
+   Example: If character is off-screen after loading save, use Alt+6, then reload the same save slot to fix camera issues
+2. Character completely out of control: **Emergency return to main menu** (Keyboard: `Ctrl+F9`, no gamepad shortcut - this is an emergency measure for critical situations)
+3. Still not working, completely unresponsive: **Restart the game**
+
+🚨 **All save data lost or stuck in a scene:**
+
+If all your save slots are lost or you're trapped in an unescapable scene, use **Emergency Teleport** (Keyboard: `Alt+-` [minus key], Gamepad: `LB+RB+X`) to instantly teleport to a preset safe location (starting town station). This works independently of your save data.
 
 ### Emergency rescue config:
 
@@ -88,8 +95,9 @@ Slot 1 defaults to the station in the starting town, which is **absolutely safe*
 ### Installation
 
 1. Install BepInEx
-2. Put `Teleport.dll` in `BepInEx/plugins/`
-3. Start game
+2. Extract and put the `Teleport` related folder into `BepInEx/plugins/` folder
+3. Ensure `Teleport.dll`, `manbo.wav`, and `Gamesave.wav` are in the same directory under the folder
+4. Start game
 
 ### Config
 
@@ -102,11 +110,20 @@ Slot 1 defaults to the station in the starting town, which is **absolutely safe*
 - `Reset Modifier Key` (default: `LeftAlt`): Modifier key for reset functions
 - `Slot 1-5 Keys` (default: `Alpha1-5`): Keys for save slots
 - `Safe Respawn Key` (default: `Alpha6`): Key for safe respawn function
+- `Bench Teleport Key` (default: `Alpha7`): Key for bench teleport function
+- `Emergency Teleport Key` (default: `Minus`): Key for emergency teleport function
 - `Reset All Key` (default: `Alpha0`): Key for reset all function
 
 #### Data Storage
-Coordinate data will be automatically saved to:  
+Coordinate data path:  
 `C:\Users\[Username]\AppData\LocalLow\Team Cherry\Hollow Knight Silksong\TeleportMod\savedata.json`
+
+Configuration file location:  
+`{Game Install Directory}\BepInEx\config\Mhz.TeleportMod.cfg`
+
+```
+💡 Note: If the config file or folder doesn't exist, please run the game once to generate it first.
+```
 
 ---
 
@@ -120,20 +137,24 @@ Coordinate data will be automatically saved to:
 
 #### 键盘操作
 - `Ctrl + 1~5`: 保存位置 🔊 有音效提示
-- `Alt + 1~5`: 读取位置
+- `Alt + 1~5`: 读取位置（无存档时自动传送到椅子）
 - `Alt + 6`: **安全重生**（轮换入口点）
+- `Alt + 7`: **传送到椅子**（最后的重生点）
 - `Alt + 0`: **重置所有坐标**
-- 无存档时自动传送到椅子
+- `Alt + -`: **紧急传送**（传送到预设安全地点）[减号键]
+- **🆘 `Ctrl + F9`: 紧急返回主菜单**（角色失控/卡死时使用）
 
 ```
-💡 提示：所有按键组合都可以在配置文件中完全自定义，包括修饰键和功能键！
+💡 提示：默认使用主键盘数字键，非小键盘。所有按键组合都可以在配置文件中完全自定义，包括修饰键和功能键！
 ```
 
 #### 手柄操作
 - `LB + RB + 方向键/A`: 传送到档位
 - `LB + Start + 方向键/A`: 保存到档位 🔊 有音效提示
 - `LB + RB + Y`: **安全重生**
+- `LB + RB + B`: **传送到椅子**（最后的重生点）
 - `LB + Select + Start`: **重置所有坐标**
+- `LB + RB + X`: **紧急传送**（传送到预设安全地点）
 
 ```
 💡 功能说明：安全重生功能用于卡BUG时脱困，重置坐标功能用于防止卡死时清空所有坐标重新开始。
@@ -158,19 +179,22 @@ Coordinate data will be automatically saved to:
 ❌ 加载/保存过程中  
 ❌ 任何特殊状态或事件触发时
 
-#### 使用频率限制:
-⏱️ 不要在极短时间内多次读档传送（如1秒内连续传送多次）
-
-#### 按键说明:
-🎹 默认键盘按键是主键盘数字键`1-6`、`0`，**非小键盘数字键**  
-🎹 如需使用小键盘，请在配置文件中自行修改为`Keypad1-6`等
+#### 注意事项:
+⏱️ 不要在极短时间内多次读档传送（如1秒内连续传送多次）  
+⚠️ 不要死亡后马上传送
 
 ### 故障处理:
 
-🆘 **如遇卡死/视角丢失：**
+🆘 **如遇卡死/视角丢失/角色起飞无法呼出菜单：**
 
-1. 首先尝试：`Alt + 6` **(安全重生)**（键盘：`Alt+6`，手柄：`LB+RB+Y`）
-2. 仍无效果，完全没反应时：**重启游戏**
+1. 首先尝试：**安全重生**（键盘：`Alt+6`，手柄：`LB+RB+Y`），如果传送到入口，再按需读档传送  
+   例如：读档传送后角色在屏幕外，使用Alt+6，随后再读刚才的档，能解决卡视野问题
+2. 角色完全失控时：**紧急返回主菜单**（键盘：`Ctrl+F9`，无手柄按键 - 这是非常时期的特殊手段）
+3. 仍无效果，完全没反应时：**重启游戏**
+
+🚨 **所有存档丢失导致困死在某个场景：**
+
+如果你的所有存档槽都丢失导致困在无法逃脱的场景中，使用**紧急传送**（键盘：`Alt+-` [减号键]，手柄：`LB+RB+X`）立即传送到预设安全地点（初始小镇车站）。此功能独立于存档数据运行。
 
 ### 紧急救援配置:
 
@@ -200,8 +224,9 @@ Coordinate data will be automatically saved to:
 ### 安装
 
 1. 安装BepInEx
-2. 将`Teleport.dll`文件放入`BepInEx/plugins/`文件夹
-3. 启动游戏
+2. 解压后将`Teleport`相关文件夹整体放入`BepInEx/plugins/`文件夹
+3. 确保文件夹下的`Teleport.dll`、`manbo.wav`和`Gamesave.wav`在同一目录
+4. 启动游戏
 
 ### 配置
 
@@ -214,8 +239,17 @@ Coordinate data will be automatically saved to:
 - `重置修饰键` (默认: `LeftAlt`): 重置功能使用的修饰键
 - `存档槽1-5按键` (默认: `Alpha1-5`): 存档槽使用的按键
 - `安全重生按键` (默认: `Alpha6`): 安全重生功能按键
+- `椅子传送按键` (默认: `Alpha7`): 椅子传送功能按键
+- `紧急传送按键` (默认: `Minus`): 紧急传送功能按键
 - `重置所有坐标按键` (默认: `Alpha0`): 重置所有坐标功能按键
 
 #### 数据存储
-坐标数据会自动保存在以下路径：  
+坐标数据路径：  
 `C:\Users\[用户名]\AppData\LocalLow\Team Cherry\Hollow Knight Silksong\TeleportMod\savedata.json`
+
+配置文件路径：  
+`{游戏安装目录}\BepInEx\config\Mhz.TeleportMod.cfg`
+
+```
+💡 提示：如果没有配置文件或文件夹，请先运行一次游戏让其自动生成。
+```

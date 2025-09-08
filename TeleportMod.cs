@@ -3,6 +3,7 @@ using BepInEx.Configuration;
 using BepInEx.Logging;
 using UnityEngine;
 using UnityEngine.Networking;
+using UnityEngine.SceneManagement;
 using System;
 using System.Linq;
 using System.Collections;
@@ -12,7 +13,7 @@ using System.Reflection;
 using Newtonsoft.Json;
 using GlobalEnums;
 
-[BepInPlugin("Mhz.TeleportMod", "Teleport Mod", "1.0.4")]
+[BepInPlugin("Mhz.TeleportMod", "Teleport Mod", "1.0.5")]
 public class TeleportMod : BaseUnityPlugin
 {
     private new static ManualLogSource? Logger;
@@ -35,6 +36,8 @@ public class TeleportMod : BaseUnityPlugin
     // 特殊功能按键配置
     private static ConfigEntry<string>? safeRespawnKey;
     private static ConfigEntry<string>? resetAllKey;
+    private static ConfigEntry<string>? hardcodedTeleportKey;
+    private static ConfigEntry<string>? benchTeleportKey;
 
     // 音效设置
     private static ConfigEntry<float>? audioVolume;
@@ -112,8 +115,8 @@ public class TeleportMod : BaseUnityPlugin
         // 初始化配置项
         enableDetailedLogging = Config.Bind("日志设置 | Logging", "启用详细日志 | Enable Detailed Logging", false, "是否启用详细的传送日志输出 | Enable detailed teleport logging output");
         enableGamepadSupport = Config.Bind("控制设置 | Controls", "启用手柄支持 | Enable Gamepad Support", true,
-            "是否启用手柄控制传送功能。操作方法：传送=LB+RB+方向键/A，保存=LB+Start+方向键/A，安全重生=LB+RB+Y，重置所有坐标=LB+Select+Start | " +
-            "Enable gamepad control for teleport functions. Controls: Teleport=LB+RB+Directional/A, Save=LB+Start+Directional/A, Safe respawn=LB+RB+Y, Reset all coordinates=LB+Select+Start");
+            "是否启用手柄控制传送功能。操作方法：传送=LB+RB+方向键/A，保存=LB+Start+方向键/A，安全重生=LB+RB+Y，硬编码传送=LB+RB+X，重置所有坐标=LB+Select+Start | " +
+            "Enable gamepad control for teleport functions. Controls: Teleport=LB+RB+Directional/A, Save=LB+Start+Directional/A, Safe respawn=LB+RB+Y, Hardcoded teleport=LB+RB+X, Reset all coordinates=LB+Select+Start");
 
         // 音效设置
         enableEasterEggAudio = Config.Bind("音效设置 | Audio Settings", "启用彩蛋音效 | Enable Easter Egg Audio", false,
@@ -152,6 +155,10 @@ public class TeleportMod : BaseUnityPlugin
             "安全重生功能使用的按键 | Key for safe respawn function");
         resetAllKey = Config.Bind("特殊功能按键 | Special Keys", "重置所有坐标按键 | Reset All Key", "Alpha0",
             "重置所有坐标功能使用的按键 | Key for reset all coordinates function");
+        hardcodedTeleportKey = Config.Bind("特殊功能按键 | Special Keys", "硬编码传送按键 | Hardcoded Teleport Key", "Minus",
+            "传送到预设坐标的按键。默认是减号键(-) | Key for teleporting to preset coordinates. Default is minus key (-)");
+        benchTeleportKey = Config.Bind("特殊功能按键 | Special Keys", "椅子传送按键 | Bench Teleport Key", "Alpha7",
+            "传送到椅子（最后重生点）的按键 | Key for teleporting to bench (last respawn point)");
 
         Logger.LogInfo("Teleport Mod 已加载!");
 
@@ -313,7 +320,10 @@ public class TeleportMod : BaseUnityPlugin
 
     private void HandleKeyboardInput()
     {
-        // 检查游戏是否暂停，如果暂停则忽略所有输入
+        // 优先处理紧急重启按键，即使游戏暂停或状态异常也要响应
+        HandleEmergencyRestartInput();
+
+        // 检查游戏是否暂停，如果暂停则忽略其他输入
         var gm = GameManager.UnsafeInstance;
         if (gm == null || gm.isPaused || gm.GameState != GlobalEnums.GameState.PLAYING)
         {
@@ -365,6 +375,25 @@ public class TeleportMod : BaseUnityPlugin
                 ClearAllSaveSlots();
                 return;
             }
+
+            // 重置修饰键+硬编码传送按键
+            KeyCode hardcodedTeleportKeyCode = ParseKeyCode(hardcodedTeleportKey?.Value ?? "Minus");
+            if (hardcodedTeleportKeyCode != KeyCode.None && Input.GetKeyDown(hardcodedTeleportKeyCode))
+            {
+                TeleportToHardcodedPosition();
+                return;
+            }
+        }
+
+        // 传送修饰键+椅子传送按键
+        if (IsModifierKeyPressed(teleportModifierKey?.Value ?? "LeftAlt"))
+        {
+            KeyCode benchTeleportKeyCode = ParseKeyCode(benchTeleportKey?.Value ?? "Alpha7");
+            if (benchTeleportKeyCode != KeyCode.None && Input.GetKeyDown(benchTeleportKeyCode))
+            {
+                TeleportToBench();
+                return;
+            }
         }
     }
 
@@ -393,6 +422,20 @@ public class TeleportMod : BaseUnityPlugin
             if (teleportModeActive && Input.GetKeyDown(KeyCode.JoystickButton3))
             {
                 RespawnToSafeEntryPoint();
+                return;
+            }
+
+            // X按钮 - 硬编码传送（仅在传送模式下）
+            if (teleportModeActive && Input.GetKeyDown(KeyCode.JoystickButton2))
+            {
+                TeleportToHardcodedPosition();
+                return;
+            }
+
+            // B按钮 - 椅子传送（仅在传送模式下）
+            if (teleportModeActive && Input.GetKeyDown(KeyCode.JoystickButton1))
+            {
+                TeleportToBench();
                 return;
             }
 
@@ -486,6 +529,93 @@ public class TeleportMod : BaseUnityPlugin
         }
     }
 
+    // 处理紧急重启输入（独立方法，优先级最高）
+    private void HandleEmergencyRestartInput()
+    {
+        try
+        {
+            // 紧急返回主菜单：Ctrl+F9（固定按键）
+            if (Input.GetKey(KeyCode.LeftControl) && Input.GetKeyDown(KeyCode.F9))
+            {
+                EmergencyReturnToMainMenu();
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogError($"处理紧急重启输入时发生错误 | Error handling emergency restart input: {ex.Message}");
+        }
+    }
+
+    // 紧急返回主菜单功能
+    private void EmergencyReturnToMainMenu()
+    {
+        try
+        {
+            Logger?.LogWarning("=== 紧急返回主菜单 | EMERGENCY RETURN TO MAIN MENU ===");
+            Logger?.LogWarning("正在强制返回主菜单，不保存当前进度！| Force returning to main menu without saving current progress!");
+
+            // 检查GameManager是否可用
+            if (GameManager.instance == null)
+            {
+                Logger?.LogError("GameManager实例未找到，无法返回主菜单 | GameManager instance not found, cannot return to main menu");
+                return;
+            }
+
+            // 使用GameManager的不保存返回主菜单方法
+            GameManager.instance.ReturnToMainMenuNoSave();
+            Logger?.LogInfo("已触发返回主菜单 | Return to main menu triggered");
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogError($"紧急返回主菜单时发生错误 | Error during emergency return to main menu: {ex.Message}");
+        }
+    }
+
+    // 直接传送到椅子功能
+    private void TeleportToBench()
+    {
+        try
+        {
+            if (HeroController.instance == null || GameManager.instance == null)
+            {
+                Logger?.LogWarning("HeroController 或 GameManager 未找到，无法传送到椅子");
+                return;
+            }
+
+            LogInfo("=== 传送到椅子 | TELEPORT TO BENCH ===");
+
+            // 获取椅子位置信息
+            var benchInfo = GetBenchPositionAndScene();
+            if (benchInfo.position == Vector3.zero || string.IsNullOrEmpty(benchInfo.scene))
+            {
+                Logger?.LogWarning("未找到有效的椅子位置或场景信息 | No valid bench position or scene found");
+                return;
+            }
+
+            string currentScene = GameManager.instance.sceneName;
+            LogInfo($"准备传送到椅子: {benchInfo.position} 在场景: {benchInfo.scene}");
+
+            // 检查是否需要切换场景
+            if (!string.IsNullOrEmpty(benchInfo.scene) && currentScene != benchInfo.scene)
+            {
+                LogInfo($"需要切换场景传送到椅子: {currentScene} -> {benchInfo.scene}");
+                StartCoroutine(TeleportWithSceneChange(benchInfo.scene, benchInfo.position));
+            }
+            else
+            {
+                // 在同一场景，直接传送
+                LogInfo("在当前场景传送到椅子");
+                PerformTeleport(benchInfo.position);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogError($"传送到椅子时发生错误 | Error during teleport to bench: {ex.Message}");
+        }
+    }
+
+
     // 将字符串转换为KeyCode
     private KeyCode ParseKeyCode(string keyString)
     {
@@ -566,6 +696,43 @@ public class TeleportMod : BaseUnityPlugin
         catch (Exception ex)
         {
             Logger?.LogError($"执行安全重生时发生错误: {ex.Message}");
+        }
+    }
+
+    // Alt+- 功能：传送到硬编码的预设坐标
+    private void TeleportToHardcodedPosition()
+    {
+        try
+        {
+            if (HeroController.instance == null || GameManager.instance == null)
+            {
+                Logger?.LogWarning("HeroController 或 GameManager 未找到，无法执行硬编码传送");
+                return;
+            }
+
+            // 硬编码的预设坐标
+            Vector3 targetPosition = new Vector3(71.42231f, 9.597684f, 0.004f);
+            string targetScene = "Bellway_01";
+
+            LogInfo($"执行硬编码传送到: {targetPosition} 在场景: {targetScene}");
+
+            // 检查是否需要切换场景
+            string currentScene = GameManager.instance.sceneName;
+            if (!string.IsNullOrEmpty(targetScene) && currentScene != targetScene)
+            {
+                LogInfo($"需要切换场景进行硬编码传送: {currentScene} -> {targetScene}");
+                StartCoroutine(TeleportWithSceneChange(targetScene, targetPosition));
+            }
+            else
+            {
+                // 在同一场景，直接传送
+                LogInfo("在当前场景执行硬编码传送");
+                PerformTeleport(targetPosition);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogError($"执行硬编码传送时发生错误: {ex.Message}");
         }
     }
 
@@ -880,35 +1047,38 @@ public class TeleportMod : BaseUnityPlugin
     {
         LogInfo("开始预加载音频文件...");
 
-        // 从程序集读取音频资源，根据配置选择音频文件
+        // 根据配置选择音频文件名（去掉Teleport.前缀）
+        var fileName = (enableEasterEggAudio?.Value == true) ? "manbo.wav" : "Gamesave.wav";
+
+        // 获取当前DLL所在的目录（BepInEx\plugins或其子目录）
         var assembly = Assembly.GetExecutingAssembly();
-        var resourceName = (enableEasterEggAudio?.Value == true) ? "Teleport.manbo.wav" : "Teleport.Gamesave.wav";
-        LogInfo($"选择音频文件: {resourceName} (彩蛋音效: {enableEasterEggAudio?.Value})");
+        string dllDirectory = Path.GetDirectoryName(assembly.Location);
+        string audioFilePath = Path.Combine(dllDirectory, fileName);
+        LogInfo($"选择音频文件: {fileName} (彩蛋音效: {enableEasterEggAudio?.Value})");
+        LogInfo($"音频文件路径: {audioFilePath}");
 
         string tempPath = "";
 
         try
         {
-            using (Stream stream = assembly.GetManifestResourceStream(resourceName))
+            // 检查音频文件是否存在
+            if (!File.Exists(audioFilePath))
             {
-                if (stream == null)
-                {
-                    Logger?.LogWarning("未找到内嵌音频资源: " + resourceName);
-                    yield break;
-                }
-
-                // 读取音频数据到内存
-                byte[] audioData = new byte[stream.Length];
-                stream.Read(audioData, 0, audioData.Length);
-
-                // 创建临时文件用于加载（只在预加载时创建一次）
-                tempPath = Path.GetTempFileName() + ".wav";
-                File.WriteAllBytes(tempPath, audioData);
+                Logger?.LogWarning($"未找到音频文件: {audioFilePath}");
+                yield break;
             }
+
+            // 直接读取音频文件
+            byte[] audioData = File.ReadAllBytes(audioFilePath);
+            LogInfo($"成功读取音频文件，大小: {audioData.Length} 字节");
+
+            // 创建临时文件用于加载（只在预加载时创建一次）
+            tempPath = Path.GetTempFileName() + ".wav";
+            File.WriteAllBytes(tempPath, audioData);
         }
         catch (Exception ex)
         {
-            Logger?.LogError($"读取音频资源时发生错误: {ex.Message}");
+            Logger?.LogError($"读取音频文件时发生错误: {ex.Message}");
             yield break;
         }
 

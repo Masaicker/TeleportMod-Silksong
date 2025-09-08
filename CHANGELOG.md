@@ -1,3 +1,11 @@
+# v1.0.5
+* 新增紧急传送功能 (Alt+减号 或 LB+RB+X)，用于存档丢失导致困死场景的紧急救援
+* 新增紧急返回主菜单功能 (Ctrl+F9)，解决角色失控（如飞起来并且无法呼出菜单只能强制关闭游戏）的问题
+* 新增椅子传送功能 (Alt+7 或 LB+RB+B)，可直接传送到最后的重生点椅子
+* Added emergency teleport function (Alt+minus or LB+RB+X) for emergency rescue when save data is lost causing stuck in scenes
+* Added emergency return to main menu function (Ctrl+F9) to solve character out of control issues (such as flying and unable to open menu, forcing game closure)
+* Added bench teleport function (Alt+7 or LB+RB+B) to directly teleport to last respawn point
+
 # v1.0.41
 * 优化README文档样式和结构
 * Optimized README documentation style and structure
