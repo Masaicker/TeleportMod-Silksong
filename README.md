@@ -28,7 +28,51 @@ A simple teleportation mod for Hollow Knight: Silksong.
 - `LB + RB + X`: **Emergency teleport** (to preset safe location)
 
 ```
-💡 Function Notes: Safe respawn is for escaping when stuck in bugs, reset coordinates is for clearing all data when stuck.
+💡 Note: All gamepad controls are fully customizable to match your personal preferences.
+```
+
+#### 🎮 Gamepad Key Reference
+
+All gamepad controls are fully customizable in the config file. Here's the complete key mapping:
+
+**Direction Keys:**
+- `DPadUp` = D-Pad Up
+- `DPadDown` = D-Pad Down  
+- `DPadLeft` = D-Pad Left
+- `DPadRight` = D-Pad Right
+
+**Face Buttons:**
+- `JoystickButton0` = A Button
+- `JoystickButton1` = B Button
+- `JoystickButton2` = X Button
+- `JoystickButton3` = Y Button
+
+**Shoulders & Triggers:**
+- `LeftBumper` = Left Bumper (LB)
+- `RightBumper` = Right Bumper (RB)
+- `LeftTrigger` = Left Trigger (LT)
+- `RightTrigger` = Right Trigger (RT)
+
+**System Buttons:**
+- `JoystickButton6` = Select/Back Button
+- `JoystickButton7` = Start Button
+- `JoystickButton8` = Home/Guide Button
+
+**Default Gamepad Configuration:**
+- Slot 1: `DPadUp` (D-Pad Up)
+- Slot 2: `DPadDown` (D-Pad Down)
+- Slot 3: `DPadLeft` (D-Pad Left)
+- Slot 4: `DPadRight` (D-Pad Right)
+- Slot 5: `JoystickButton0` (A Button)
+- Teleport Modifiers: `LeftBumper` + `RightBumper` (LB + RB)
+- Save Modifiers: `LeftBumper` + `JoystickButton7` (LB + Start)
+- Safe Respawn: `JoystickButton3` (Y Button) [in teleport mode]
+- Hardcoded Teleport: `JoystickButton2` (X Button) [in teleport mode]
+- Bench Teleport: `JoystickButton1` (B Button) [in teleport mode]
+- Reset All: `LeftBumper` + `JoystickButton6` + `JoystickButton7` (LB + Select + Start)
+
+```
+⚙️ All gamepad controls can be customized in the game's config file.
 ```
 
 ### Safety Guidelines
@@ -157,7 +201,58 @@ Configuration file location:
 - `LB + RB + X`: **紧急传送**（传送到预设安全地点）
 
 ```
-💡 功能说明：安全重生功能用于卡BUG时脱困，重置坐标功能用于防止卡死时清空所有坐标重新开始。
+💡 提示：所有手柄按键均支持自定义配置，可根据个人习惯调整操作方式。
+```
+
+#### 🎮 手柄按键对照表详细说明
+
+所有手柄操作都可以在配置文件中完全自定义。以下是完整按键对照：
+
+**方向键:**
+- `DPadUp` = 方向键上
+- `DPadDown` = 方向键下
+- `DPadLeft` = 方向键左  
+- `DPadRight` = 方向键右
+
+**面部按钮:**
+- `JoystickButton0` = A按钮
+- `JoystickButton1` = B按钮
+- `JoystickButton2` = X按钮
+- `JoystickButton3` = Y按钮
+
+**肩键扳机:**
+- `LeftBumper` = 左肩键(LB)
+- `RightBumper` = 右肩键(RB)
+- `LeftTrigger` = 左扳机(LT)
+- `RightTrigger` = 右扳机(RT)
+
+**系统按钮:**
+- `JoystickButton6` = Select/Back按钮
+- `JoystickButton7` = Start按钮
+- `JoystickButton8` = Home/Guide按钮
+
+**摇杆方向 (可选配置):**
+- `LeftStickUp/Down/Left/Right` = 左摇杆方向
+- `RightStickUp/Down/Left/Right` = 右摇杆方向
+- `LeftStickButton` = 左摇杆按下(L3)
+- `RightStickButton` = 右摇杆按下(R3)
+
+**默认手柄配置:**
+- 存档槽1: `DPadUp` (方向键上)
+- 存档槽2: `DPadDown` (方向键下)
+- 存档槽3: `DPadLeft` (方向键左)
+- 存档槽4: `DPadRight` (方向键右)
+- 存档槽5: `JoystickButton0` (A按钮)
+- 传送修饰键: `LeftBumper` + `RightBumper` (LB + RB)
+- 保存修饰键: `LeftBumper` + `JoystickButton7` (LB + Start)
+- 安全重生: `JoystickButton3` (Y按钮) [传送模式下]
+- 硬编码传送: `JoystickButton2` (X按钮) [传送模式下]
+- 椅子传送: `JoystickButton1` (B按钮) [传送模式下]
+- 重置所有: `LeftBumper` + `JoystickButton6` + `JoystickButton7` (LB + Select + Start)
+
+```
+⚙️ 所有手柄操作都可以在游戏配置文件中自定义。
+💡 如果旧版本配置项过多影响查看，可删除.cfg配置文件，重启游戏自动生成最新配置。
 ```
 
 ### 安全使用指南

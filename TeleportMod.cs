@@ -12,8 +12,9 @@ using System.IO;
 using System.Reflection;
 using Newtonsoft.Json;
 using GlobalEnums;
+using InControl;
 
-[BepInPlugin("Mhz.TeleportMod", "Teleport Mod", "1.0.5")]
+[BepInPlugin("Mhz.TeleportMod", "Teleport Mod", "1.0.6")]
 public class TeleportMod : BaseUnityPlugin
 {
     private new static ManualLogSource? Logger;
@@ -26,14 +27,35 @@ public class TeleportMod : BaseUnityPlugin
     private static ConfigEntry<string>? teleportModifierKey;
     private static ConfigEntry<string>? resetModifierKey;
 
-    // 存档槽按键配置
+    // 手柄存档槽按键配置
+    private static ConfigEntry<string>? gamepadSlot1Key;
+    private static ConfigEntry<string>? gamepadSlot2Key;
+    private static ConfigEntry<string>? gamepadSlot3Key;
+    private static ConfigEntry<string>? gamepadSlot4Key;
+    private static ConfigEntry<string>? gamepadSlot5Key;
+
+    // 手柄修饰键配置
+    private static ConfigEntry<string>? gamepadTeleportModifier1;
+    private static ConfigEntry<string>? gamepadTeleportModifier2;
+    private static ConfigEntry<string>? gamepadSaveModifier;
+    private static ConfigEntry<string>? gamepadSaveTrigger;
+
+    // 手柄特殊功能按键配置
+    private static ConfigEntry<string>? gamepadSafeRespawnKey;
+    private static ConfigEntry<string>? gamepadHardcodedTeleportKey;
+    private static ConfigEntry<string>? gamepadBenchTeleportKey;
+    private static ConfigEntry<string>? gamepadClearAllModifier1;
+    private static ConfigEntry<string>? gamepadClearAllModifier2;
+    private static ConfigEntry<string>? gamepadClearAllTrigger;
+
+    // 键盘存档槽按键配置（保持向后兼容）
     private static ConfigEntry<string>? slot1Key;
     private static ConfigEntry<string>? slot2Key;
     private static ConfigEntry<string>? slot3Key;
     private static ConfigEntry<string>? slot4Key;
     private static ConfigEntry<string>? slot5Key;
 
-    // 特殊功能按键配置
+    // 键盘特殊功能按键配置（保持向后兼容）
     private static ConfigEntry<string>? safeRespawnKey;
     private static ConfigEntry<string>? resetAllKey;
     private static ConfigEntry<string>? hardcodedTeleportKey;
@@ -51,6 +73,7 @@ public class TeleportMod : BaseUnityPlugin
     // 手柄轴输入状态跟踪
     private static bool wasVerticalPressed = false;
     private static bool wasHorizontalPressed = false;
+
 
     // 音频播放器复用
     private static GameObject? audioPlayerObject = null;
@@ -138,27 +161,65 @@ public class TeleportMod : BaseUnityPlugin
             "重置坐标和安全重生时使用的修饰键。可选值：LeftControl, RightControl, LeftAlt, RightAlt, LeftShift, RightShift | " +
             "Modifier key for reset and safe respawn functions. Options: LeftControl, RightControl, LeftAlt, RightAlt, LeftShift, RightShift");
 
-        // 存档槽按键配置
-        slot1Key = Config.Bind("存档槽按键 | Slot Keys", "存档槽1按键 | Slot 1 Key", "Alpha1",
-            "存档槽1使用的按键。可用：Alpha0-9, F1-F12, Q, W, E, R, T, Y, U, I, O, P等 | Key for slot 1. Available: Alpha0-9, F1-F12, Q, W, E, R, T, Y, U, I, O, P, etc.");
-        slot2Key = Config.Bind("存档槽按键 | Slot Keys", "存档槽2按键 | Slot 2 Key", "Alpha2",
-            "存档槽2使用的按键 | Key for slot 2");
-        slot3Key = Config.Bind("存档槽按键 | Slot Keys", "存档槽3按键 | Slot 3 Key", "Alpha3",
-            "存档槽3使用的按键 | Key for slot 3");
-        slot4Key = Config.Bind("存档槽按键 | Slot Keys", "存档槽4按键 | Slot 4 Key", "Alpha4",
-            "存档槽4使用的按键 | Key for slot 4");
-        slot5Key = Config.Bind("存档槽按键 | Slot Keys", "存档槽5按键 | Slot 5 Key", "Alpha5",
-            "存档槽5使用的按键 | Key for slot 5");
+        // 手柄存档槽按键配置
+        gamepadSlot1Key = Config.Bind("手柄存档槽按键 | Gamepad Slot Keys", "手柄存档槽1 | Gamepad Slot 1", "DPadUp",
+            "手柄存档槽1按键 | Gamepad key for slot 1 (默认: DPadUp=方向键上 | Default: DPadUp=D-Pad Up). 📖 完整按键对照表请查看 README.md | For complete key reference, see README.md");
+        gamepadSlot2Key = Config.Bind("手柄存档槽按键 | Gamepad Slot Keys", "手柄存档槽2 | Gamepad Slot 2", "DPadDown",
+            "手柄存档槽2按键 | Gamepad key for slot 2 (默认: DPadDown=方向键下 | Default: DPadDown=D-Pad Down)");
+        gamepadSlot3Key = Config.Bind("手柄存档槽按键 | Gamepad Slot Keys", "手柄存档槽3 | Gamepad Slot 3", "DPadLeft",
+            "手柄存档槽3按键 | Gamepad key for slot 3 (默认: DPadLeft=方向键左 | Default: DPadLeft=D-Pad Left)");
+        gamepadSlot4Key = Config.Bind("手柄存档槽按键 | Gamepad Slot Keys", "手柄存档槽4 | Gamepad Slot 4", "DPadRight",
+            "手柄存档槽4按键 | Gamepad key for slot 4 (默认: DPadRight=方向键右 | Default: DPadRight=D-Pad Right)");
+        gamepadSlot5Key = Config.Bind("手柄存档槽按键 | Gamepad Slot Keys", "手柄存档槽5 | Gamepad Slot 5", "JoystickButton0",
+            "手柄存档槽5按键 | Gamepad key for slot 5 (默认: JoystickButton0=A按钮 | Default: JoystickButton0=A Button)");
 
-        // 特殊功能按键配置
-        safeRespawnKey = Config.Bind("特殊功能按键 | Special Keys", "安全重生按键 | Safe Respawn Key", "Alpha6",
-            "安全重生功能使用的按键 | Key for safe respawn function");
-        resetAllKey = Config.Bind("特殊功能按键 | Special Keys", "重置所有坐标按键 | Reset All Key", "Alpha0",
-            "重置所有坐标功能使用的按键 | Key for reset all coordinates function");
-        hardcodedTeleportKey = Config.Bind("特殊功能按键 | Special Keys", "硬编码传送按键 | Hardcoded Teleport Key", "Minus",
-            "传送到预设坐标的按键。默认是减号键(-) | Key for teleporting to preset coordinates. Default is minus key (-)");
-        benchTeleportKey = Config.Bind("特殊功能按键 | Special Keys", "椅子传送按键 | Bench Teleport Key", "Alpha7",
-            "传送到椅子（最后重生点）的按键 | Key for teleporting to bench (last respawn point)");
+        // 手柄修饰键配置
+        gamepadTeleportModifier1 = Config.Bind("手柄修饰键 | Gamepad Modifiers", "传送修饰键1 | Teleport Modifier 1", "LeftBumper",
+            "传送修饰键1 (默认: LeftBumper=LB) | Teleport modifier 1 (Default: LeftBumper=LB). 组合: 修饰键1 + 修饰键2 + 存档槽 = 传送 | Combo: Modifier1 + Modifier2 + Slot = Teleport");
+        gamepadTeleportModifier2 = Config.Bind("手柄修饰键 | Gamepad Modifiers", "传送修饰键2 | Teleport Modifier 2", "RightBumper",
+            "传送修饰键2 (默认: RightBumper=RB) | Teleport modifier 2 (Default: RightBumper=RB). 默认组合: LB + RB | Default combo: LB + RB");
+        gamepadSaveModifier = Config.Bind("手柄修饰键 | Gamepad Modifiers", "保存修饰键 | Save Modifier", "LeftBumper",
+            "保存修饰键 (默认: LeftBumper=LB) | Save modifier (Default: LeftBumper=LB). 组合: 保存修饰键 + 保存触发键 + 存档槽 = 保存 | Combo: Save Modifier + Save Trigger + Slot = Save");
+        gamepadSaveTrigger = Config.Bind("手柄修饰键 | Gamepad Modifiers", "保存触发键 | Save Trigger", "JoystickButton7",
+            "保存触发键 (默认: JoystickButton7=Start) | Save trigger (Default: JoystickButton7=Start). 默认组合: LB + Start | Default combo: LB + Start");
+
+        // 手柄特殊功能按键配置  
+        gamepadSafeRespawnKey = Config.Bind("手柄特殊功能 | Gamepad Special", "安全重生按键 | Safe Respawn", "JoystickButton3",
+            "安全重生按键 (默认: JoystickButton3=Y按钮) | Safe respawn key (Default: JoystickButton3=Y Button). 传送模式下使用 | Use in teleport mode");
+        gamepadHardcodedTeleportKey = Config.Bind("手柄特殊功能 | Gamepad Special", "硬编码传送按键 | Hardcoded Teleport", "JoystickButton2",
+            "硬编码传送按键 (默认: JoystickButton2=X按钮) | Hardcoded teleport key (Default: JoystickButton2=X Button). 传送模式下使用 | Use in teleport mode");
+        gamepadBenchTeleportKey = Config.Bind("手柄特殊功能 | Gamepad Special", "椅子传送按键 | Bench Teleport", "JoystickButton1",
+            "椅子传送按键 (默认: JoystickButton1=B按钮) | Bench teleport key (Default: JoystickButton1=B Button). 传送模式下使用 | Use in teleport mode");
+
+        // 手柄重置组合键配置
+        gamepadClearAllModifier1 = Config.Bind("手柄重置组合 | Gamepad Reset Combo", "重置修饰键1 | Reset Modifier 1", "LeftBumper",
+            "重置修饰键1 (默认: LeftBumper=LB) | Reset modifier 1 (Default: LeftBumper=LB). 三键组合清空所有存档 | Triple key combo to clear all saves");
+        gamepadClearAllModifier2 = Config.Bind("手柄重置组合 | Gamepad Reset Combo", "重置修饰键2 | Reset Modifier 2", "JoystickButton6",
+            "重置修饰键2 (默认: JoystickButton6=Select) | Reset modifier 2 (Default: JoystickButton6=Select). 默认组合: LB + Select + Start | Default combo: LB + Select + Start");
+        gamepadClearAllTrigger = Config.Bind("手柄重置组合 | Gamepad Reset Combo", "重置触发键 | Reset Trigger", "JoystickButton7",
+            "重置触发键 (默认: JoystickButton7=Start) | Reset trigger (Default: JoystickButton7=Start). ⚠️警告: 此操作不可撤销 | ⚠️Warning: This action is irreversible");
+
+        // 键盘存档槽按键配置（保持向后兼容）
+        slot1Key = Config.Bind("键盘存档槽按键 | Keyboard Slot Keys", "键盘存档槽1 | Keyboard Slot 1", "Alpha1",
+            "键盘存档槽1按键。可用：Alpha0-9, F1-F12, Q, W, E, R, T, Y, U, I, O, P等 | Keyboard key for slot 1. Available: Alpha0-9, F1-F12, Q, W, E, R, T, Y, U, I, O, P, etc.");
+        slot2Key = Config.Bind("键盘存档槽按键 | Keyboard Slot Keys", "键盘存档槽2 | Keyboard Slot 2", "Alpha2",
+            "键盘存档槽2按键 | Keyboard key for slot 2");
+        slot3Key = Config.Bind("键盘存档槽按键 | Keyboard Slot Keys", "键盘存档槽3 | Keyboard Slot 3", "Alpha3",
+            "键盘存档槽3按键 | Keyboard key for slot 3");
+        slot4Key = Config.Bind("键盘存档槽按键 | Keyboard Slot Keys", "键盘存档槽4 | Keyboard Slot 4", "Alpha4",
+            "键盘存档槽4按键 | Keyboard key for slot 4");
+        slot5Key = Config.Bind("键盘存档槽按键 | Keyboard Slot Keys", "键盘存档槽5 | Keyboard Slot 5", "Alpha5",
+            "键盘存档槽5按键 | Keyboard key for slot 5");
+
+        // 键盘特殊功能按键配置（保持向后兼容）
+        safeRespawnKey = Config.Bind("键盘特殊功能 | Keyboard Special", "键盘安全重生 | Keyboard Safe Respawn", "Alpha6",
+            "键盘安全重生功能按键 | Keyboard safe respawn function key");
+        resetAllKey = Config.Bind("键盘特殊功能 | Keyboard Special", "键盘重置所有 | Keyboard Reset All", "Alpha0",
+            "键盘重置所有坐标功能按键 | Keyboard reset all coordinates function key");
+        hardcodedTeleportKey = Config.Bind("键盘特殊功能 | Keyboard Special", "键盘硬编码传送 | Keyboard Hardcoded Teleport", "Minus",
+            "键盘传送到预设坐标的按键。默认是减号键(-) | Keyboard key for teleporting to preset coordinates. Default is minus key (-)");
+        benchTeleportKey = Config.Bind("键盘特殊功能 | Keyboard Special", "键盘椅子传送 | Keyboard Bench Teleport", "Alpha7",
+            "键盘传送到椅子（最后重生点）的按键 | Keyboard key for teleporting to bench (last respawn point)");
 
         Logger.LogInfo("Teleport Mod 已加载!");
 
@@ -300,6 +361,144 @@ public class TeleportMod : BaseUnityPlugin
         }
     }
 
+    // 统一的手柄按键检测方法
+    private static bool IsGamepadKeyPressed(string keyConfig)
+    {
+        if (string.IsNullOrEmpty(keyConfig)) return false;
+
+        var device = InputManager.ActiveDevice;
+        if (device == null || !device.IsAttached) return false;
+
+        return keyConfig switch
+        {
+            // 方向键 (DPad)
+            "DPadUp" => device.DPadUp.WasPressed,
+            "DPadDown" => device.DPadDown.WasPressed,
+            "DPadLeft" => device.DPadLeft.WasPressed,
+            "DPadRight" => device.DPadRight.WasPressed,
+
+            // 肩键 (Bumpers)
+            "LeftBumper" => device.LeftBumper.WasPressed,
+            "RightBumper" => device.RightBumper.WasPressed,
+
+            // 扳机 (Triggers)
+            "LeftTrigger" => device.LeftTrigger.WasPressed,
+            "RightTrigger" => device.RightTrigger.WasPressed,
+
+            // 摇杆按钮
+            "LeftStickButton" => device.LeftStickButton.WasPressed,
+            "RightStickButton" => device.RightStickButton.WasPressed,
+
+            // 左摇杆方向
+            "LeftStickUp" => device.LeftStickUp.WasPressed,
+            "LeftStickDown" => device.LeftStickDown.WasPressed,
+            "LeftStickLeft" => device.LeftStickLeft.WasPressed,
+            "LeftStickRight" => device.LeftStickRight.WasPressed,
+
+            // 右摇杆方向
+            "RightStickUp" => device.RightStickUp.WasPressed,
+            "RightStickDown" => device.RightStickDown.WasPressed,
+            "RightStickLeft" => device.RightStickLeft.WasPressed,
+            "RightStickRight" => device.RightStickRight.WasPressed,
+
+            // 数字按钮 (JoystickButton0-19)
+            _ when keyConfig.StartsWith("JoystickButton") => ParseJoystickButton(keyConfig),
+
+            _ => false
+        };
+    }
+
+    // 统一的手柄按键按住检测方法
+    private static bool IsGamepadKeyHeld(string keyConfig)
+    {
+        if (string.IsNullOrEmpty(keyConfig)) return false;
+
+        var device = InputManager.ActiveDevice;
+        if (device == null || !device.IsAttached) return false;
+
+        return keyConfig switch
+        {
+            // 方向键 (DPad)
+            "DPadUp" => device.DPadUp.IsPressed,
+            "DPadDown" => device.DPadDown.IsPressed,
+            "DPadLeft" => device.DPadLeft.IsPressed,
+            "DPadRight" => device.DPadRight.IsPressed,
+
+            // 肩键 (Bumpers)
+            "LeftBumper" => device.LeftBumper.IsPressed,
+            "RightBumper" => device.RightBumper.IsPressed,
+
+            // 扳机 (Triggers)
+            "LeftTrigger" => device.LeftTrigger.IsPressed,
+            "RightTrigger" => device.RightTrigger.IsPressed,
+
+            // 摇杆按钮
+            "LeftStickButton" => device.LeftStickButton.IsPressed,
+            "RightStickButton" => device.RightStickButton.IsPressed,
+
+            // 左摇杆方向
+            "LeftStickUp" => device.LeftStickUp.IsPressed,
+            "LeftStickDown" => device.LeftStickDown.IsPressed,
+            "LeftStickLeft" => device.LeftStickLeft.IsPressed,
+            "LeftStickRight" => device.LeftStickRight.IsPressed,
+
+            // 右摇杆方向
+            "RightStickUp" => device.RightStickUp.IsPressed,
+            "RightStickDown" => device.RightStickDown.IsPressed,
+            "RightStickLeft" => device.RightStickLeft.IsPressed,
+            "RightStickRight" => device.RightStickRight.IsPressed,
+
+            // 数字按钮 (JoystickButton0-19)
+            _ when keyConfig.StartsWith("JoystickButton") => ParseJoystickButtonHeld(keyConfig),
+
+            _ => false
+        };
+    }
+
+    // 解析JoystickButton按键 (WasPressed)
+    private static bool ParseJoystickButton(string keyConfig)
+    {
+        try
+        {
+            if (keyConfig.StartsWith("JoystickButton") && keyConfig.Length > 14)
+            {
+                string numberPart = keyConfig.Substring(14);
+                if (int.TryParse(numberPart, out int buttonNumber) && buttonNumber >= 0 && buttonNumber <= 19)
+                {
+                    KeyCode keyCode = (KeyCode)System.Enum.Parse(typeof(KeyCode), keyConfig);
+                    return Input.GetKeyDown(keyCode);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogError($"解析JoystickButton时发生错误: {keyConfig}, {ex.Message}");
+        }
+        return false;
+    }
+
+    // 解析JoystickButton按键 (IsPressed)
+    private static bool ParseJoystickButtonHeld(string keyConfig)
+    {
+        try
+        {
+            if (keyConfig.StartsWith("JoystickButton") && keyConfig.Length > 14)
+            {
+                string numberPart = keyConfig.Substring(14);
+                if (int.TryParse(numberPart, out int buttonNumber) && buttonNumber >= 0 && buttonNumber <= 19)
+                {
+                    KeyCode keyCode = (KeyCode)System.Enum.Parse(typeof(KeyCode), keyConfig);
+                    return Input.GetKey(keyCode);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogError($"解析JoystickButton时发生错误: {keyConfig}, {ex.Message}");
+        }
+        return false;
+    }
+
     private void Update()
     {
         // 使用UnsafeInstance避免游戏启动时的错误日志
@@ -408,83 +607,93 @@ public class TeleportMod : BaseUnityPlugin
                 return;
             }
 
-            // 检查LB+RB是否被按下（传送模式激活）
-            bool teleportModeActive = Input.GetKey(KeyCode.JoystickButton4) && Input.GetKey(KeyCode.JoystickButton5);
+            // 使用自定义配置检查传送模式和保存模式
+            bool teleportModeActive = IsGamepadKeyHeld(gamepadTeleportModifier1?.Value ?? "LeftBumper") &&
+                                     IsGamepadKeyHeld(gamepadTeleportModifier2?.Value ?? "RightBumper");
 
-            // 检查保存模式：LB+Start按钮
-            bool saveModeActive = Input.GetKey(KeyCode.JoystickButton4) &&
-                                 (Input.GetKey(KeyCode.JoystickButton7) || Input.GetKey(KeyCode.JoystickButton9)); // LB + Start
+            bool saveModeActive = IsGamepadKeyHeld(gamepadSaveModifier?.Value ?? "LeftBumper") &&
+                                 IsGamepadKeyHeld(gamepadSaveTrigger?.Value ?? "JoystickButton7");
 
             // 如果既不是传送模式也不是保存模式，直接返回
             if (!teleportModeActive && !saveModeActive) return;
 
-            // Y按钮 - 轮换安全入口点（仅在传送模式下）
-            if (teleportModeActive && Input.GetKeyDown(KeyCode.JoystickButton3))
+            // 安全重生按键（仅在传送模式下）
+            if (teleportModeActive && IsGamepadKeyPressed(gamepadSafeRespawnKey?.Value ?? "JoystickButton3"))
             {
                 RespawnToSafeEntryPoint();
                 return;
             }
 
-            // X按钮 - 硬编码传送（仅在传送模式下）
-            if (teleportModeActive && Input.GetKeyDown(KeyCode.JoystickButton2))
+            // 硬编码传送按键（仅在传送模式下）
+            if (teleportModeActive && IsGamepadKeyPressed(gamepadHardcodedTeleportKey?.Value ?? "JoystickButton2"))
             {
                 TeleportToHardcodedPosition();
                 return;
             }
 
-            // B按钮 - 椅子传送（仅在传送模式下）
-            if (teleportModeActive && Input.GetKeyDown(KeyCode.JoystickButton1))
+            // 椅子传送按键（仅在传送模式下）
+            if (teleportModeActive && IsGamepadKeyPressed(gamepadBenchTeleportKey?.Value ?? "JoystickButton1"))
             {
                 TeleportToBench();
                 return;
             }
 
-            // LB+Select+Start 清空所有存档坐标（重置功能）
-            bool selectPressed = Input.GetKey(KeyCode.JoystickButton6) || Input.GetKey(KeyCode.JoystickButton8); // Select按钮可能是6或8
-            bool startPressed = Input.GetKey(KeyCode.JoystickButton7) || Input.GetKey(KeyCode.JoystickButton9); // Start按钮可能是7或9
-            if (Input.GetKey(KeyCode.JoystickButton4) && selectPressed && startPressed)
+            // 清空所有存档坐标组合键
+            bool clearAllActive = IsGamepadKeyHeld(gamepadClearAllModifier1?.Value ?? "LeftBumper") &&
+                                  IsGamepadKeyHeld(gamepadClearAllModifier2?.Value ?? "JoystickButton6");
+
+            if (clearAllActive && IsGamepadKeyPressed(gamepadClearAllTrigger?.Value ?? "JoystickButton7"))
             {
-                // 检测Start按钮被按下的瞬间
-                if (Input.GetKeyDown(KeyCode.JoystickButton7) || Input.GetKeyDown(KeyCode.JoystickButton9))
+                ClearAllSaveSlots();
+                return;
+            }
+
+            // 存档槽按键检测（使用自定义配置）
+            int slotNumber = 0;
+
+            if (!wasVerticalPressed || !wasHorizontalPressed)
+            {
+                // 检测存档槽1-5
+                if (!wasVerticalPressed && IsGamepadKeyPressed(gamepadSlot1Key?.Value ?? "DPadUp"))
                 {
-                    ClearAllSaveSlots();
-                    return;
+                    slotNumber = 1;
+                    wasVerticalPressed = true;
+                    LogInfo($"检测到存档槽1按键: {gamepadSlot1Key?.Value}");
+                }
+                else if (!wasVerticalPressed && IsGamepadKeyPressed(gamepadSlot2Key?.Value ?? "DPadDown"))
+                {
+                    slotNumber = 2;
+                    wasVerticalPressed = true;
+                    LogInfo($"检测到存档槽2按键: {gamepadSlot2Key?.Value}");
+                }
+                else if (!wasHorizontalPressed && IsGamepadKeyPressed(gamepadSlot3Key?.Value ?? "DPadLeft"))
+                {
+                    slotNumber = 3;
+                    wasHorizontalPressed = true;
+                    LogInfo($"检测到存档槽3按键: {gamepadSlot3Key?.Value}");
+                }
+                else if (!wasHorizontalPressed && IsGamepadKeyPressed(gamepadSlot4Key?.Value ?? "DPadRight"))
+                {
+                    slotNumber = 4;
+                    wasHorizontalPressed = true;
+                    LogInfo($"检测到存档槽4按键: {gamepadSlot4Key?.Value}");
+                }
+                else if (IsGamepadKeyPressed(gamepadSlot5Key?.Value ?? "JoystickButton0"))
+                {
+                    slotNumber = 5;
+                    LogInfo($"检测到存档槽5按键: {gamepadSlot5Key?.Value}");
                 }
             }
 
-            // 方向键和A按钮 - 档位操作
-            int slotNumber = 0;
+            // 重置按下状态（根据配置检测）
+            var slot1Key = gamepadSlot1Key?.Value ?? "DPadUp";
+            var slot2Key = gamepadSlot2Key?.Value ?? "DPadDown";
+            var slot3Key = gamepadSlot3Key?.Value ?? "DPadLeft";
+            var slot4Key = gamepadSlot4Key?.Value ?? "DPadRight";
 
-            // 使用轴输入检测方向键
-            float horizontal = Input.GetAxis("Horizontal");
-            float vertical = Input.GetAxis("Vertical");
-
-            // 检测方向键按下（需要轴值变化）
-            if (Mathf.Abs(vertical) > 0.8f && !wasVerticalPressed)
-            {
-                if (vertical > 0) // Up
-                    slotNumber = 1;
-                else // Down
-                    slotNumber = 2;
-                wasVerticalPressed = true;
-            }
-            else if (Mathf.Abs(horizontal) > 0.8f && !wasHorizontalPressed)
-            {
-                if (horizontal < 0) // Left
-                    slotNumber = 3;
-                else // Right
-                    slotNumber = 4;
-                wasHorizontalPressed = true;
-            }
-            else if (Input.GetKeyDown(KeyCode.JoystickButton0)) // A按钮
-            {
-                slotNumber = 5;
-            }
-
-            // 重置轴按下状态
-            if (Mathf.Abs(vertical) < 0.3f)
+            if (wasVerticalPressed && !IsGamepadKeyHeld(slot1Key) && !IsGamepadKeyHeld(slot2Key))
                 wasVerticalPressed = false;
-            if (Mathf.Abs(horizontal) < 0.3f)
+            if (wasHorizontalPressed && !IsGamepadKeyHeld(slot3Key) && !IsGamepadKeyHeld(slot4Key))
                 wasHorizontalPressed = false;
 
             // 执行档位操作

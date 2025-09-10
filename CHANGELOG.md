@@ -1,3 +1,7 @@
+# v1.0.6
+* 修复手柄摇杆误触发问题，新增完整的手柄按键自定义功能，详见README按键映射表
+* Fixed gamepad joystick false trigger issues, added complete gamepad key customization, see README key mapping table
+
 # v1.0.5
 * 新增紧急传送功能 (Alt+减号 或 LB+RB+X)，用于存档丢失导致困死场景的紧急救援
 * 新增紧急返回主菜单功能 (Ctrl+F9)，解决角色失控（如飞起来并且无法呼出菜单只能强制关闭游戏）的问题
