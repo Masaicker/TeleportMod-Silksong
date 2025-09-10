@@ -14,7 +14,7 @@ using Newtonsoft.Json;
 using GlobalEnums;
 using InControl;
 
-[BepInPlugin("Mhz.TeleportMod", "Teleport Mod", "1.0.6")]
+[BepInPlugin("Mhz.TeleportMod", "Teleport Mod", "1.1.0")]
 public class TeleportMod : BaseUnityPlugin
 {
     private new static ManualLogSource? Logger;
@@ -361,6 +361,42 @@ public class TeleportMod : BaseUnityPlugin
         }
     }
 
+    // 检查是否允许保存和传送操作
+    private static bool CanPerformTeleportOperations()
+    {
+        try
+        {
+            // 检查血量是否为0（死亡）
+            if (PlayerData.instance != null && PlayerData.instance.health <= 0)
+            {
+                LogInfo("角色血量为0，禁止保存和传送 | Hero health is 0, blocking save and teleport");
+                return false;
+            }
+
+            // 检查是否在椅子上
+            if (PlayerData.instance != null && PlayerData.instance.atBench)
+            {
+                LogInfo("角色在椅子上，禁止保存和传送 | Hero is at bench, blocking save and teleport");
+                return false;
+            }
+
+            // 检查是否正在重生
+            if (GameManager.instance != null && GameManager.instance.RespawningHero)
+            {
+                LogInfo("角色正在重生，禁止保存和传送 | Hero is respawning, blocking save and teleport");
+                return false;
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogError($"检查传送操作权限时发生错误: {ex.Message}");
+            return false; // 出错时为安全起见禁止操作
+        }
+    }
+
+
     // 统一的手柄按键检测方法
     private static bool IsGamepadKeyPressed(string keyConfig)
     {
@@ -529,6 +565,13 @@ public class TeleportMod : BaseUnityPlugin
             return;
         }
 
+        // 检查是否允许传送操作（血量、椅子、重生状态）
+        if (!CanPerformTeleportOperations())
+        {
+            return;
+        }
+
+
         // 保存修饰键+存档槽按键 保存对应档位
         if (IsModifierKeyPressed(saveModifierKey?.Value ?? "LeftControl"))
         {
@@ -606,6 +649,13 @@ public class TeleportMod : BaseUnityPlugin
             {
                 return;
             }
+
+            // 检查是否允许传送操作（血量、椅子、重生状态）
+            if (!CanPerformTeleportOperations())
+            {
+                return;
+            }
+
 
             // 使用自定义配置检查传送模式和保存模式
             bool teleportModeActive = IsGamepadKeyHeld(gamepadTeleportModifier1?.Value ?? "LeftBumper") &&

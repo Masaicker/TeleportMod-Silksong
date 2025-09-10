@@ -1,3 +1,7 @@
+# v1.1.0
+* 新增安全状态检查功能，防止在角色死亡、坐椅子、重生时进行保存和传送操作，避免卡BUG
+* Added safety state checks to prevent save and teleport operations during death, sitting on bench, or respawning to avoid bugs
+
 # v1.0.6
 * 修复手柄摇杆误触发问题，新增完整的手柄按键自定义功能，详见README按键映射表
 * Fixed gamepad joystick false trigger issues, added complete gamepad key customization, see README key mapping table
