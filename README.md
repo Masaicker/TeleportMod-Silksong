@@ -6,6 +6,22 @@ A simple teleportation mod for Hollow Knight: Silksong.
 
 ## English Documentation
 
+<details>
+<summary><h3>📋 Known Issues & Solutions</h3></summary>
+
+#### 🔧 Camera Issues
+If the character appears off-screen after teleporting, or the camera doesn't follow character movement, this is usually caused by skipping the game's camera transition mechanism during teleportation. For solutions, please refer to the Safe Respawn function in the [Troubleshooting Guide](#troubleshooting).
+
+#### ⚠️ Teleporting to Unlocked Entry Points  
+Both teleportation and Safe Respawn functions may sometimes teleport the character to unlocked entry points. Due to potential obstacles at unlocked entrances, the character might be "pushed into" unexpected closed areas. If you find yourself trapped in a scene that you cannot normally exit, please:
+- Use **Teleport to Bench** function to return to the last save point
+- Or use **Emergency Teleport** to return to a safe location
+- Temporarily avoid saving coordinates in such areas
+
+📍 **Special Note**: The "MEMORIUM" scene (requires double jump to reach) is prone to this issue. If teleported there before unlocking double jump, you will be trapped in the scene, please be extra careful.
+
+</details>
+
 ### Usage
 
 #### Keyboard Controls
@@ -75,6 +91,7 @@ All gamepad controls are fully customizable in the config file. Here's the compl
 
 ```
 ⚙️ All gamepad controls can be customized in the game's config file.
+💡 If older version config entries are too numerous and affect viewing, you can delete the .cfg config file and restart the game to automatically generate the latest configuration.
 ```
 
 ### Safety Guidelines
@@ -105,8 +122,9 @@ All gamepad controls are fully customizable in the config file. Here's the compl
 🆘 **If stuck/camera lost/character floating and unable to open menu:**
 
 1. First try: **Safe Respawn** (Keyboard: `Alt+6`, Gamepad: `LB+RB+Y`), if teleported to entry point, then use load position as needed  
-   Example: If character is off-screen after loading save, use Alt+6, then reload the same save slot to fix camera issues
-2. Character completely out of control: **Emergency return to main menu** (Keyboard: `Ctrl+F9`, no gamepad shortcut - this is an emergency measure for critical situations)
+   Example: If character is off-screen after loading save, or camera doesn't follow character movement, use Alt+6 safe respawn, then reload the same save slot coordinates to fix camera/view issues
+2. Character completely out of control, or character floating and not landing: **Emergency return to main menu** (Keyboard: `Ctrl+F9`, no gamepad shortcut)  
+   ⚠️ **Important**: Do NOT use emergency return to main menu when character is dead
 3. Still not working, completely unresponsive: **Restart the game**
 
 🚨 **All save data lost or stuck in a scene:**
