@@ -14,7 +14,7 @@ using Newtonsoft.Json;
 using GlobalEnums;
 using InControl;
 
-[BepInPlugin("Mhz.TeleportMod", "Teleport Mod", "1.1.0")]
+[BepInPlugin("Mhz.TeleportMod", "Teleport Mod", "1.1.1")]
 public class TeleportMod : BaseUnityPlugin
 {
     private new static ManualLogSource? Logger;
@@ -67,8 +67,11 @@ public class TeleportMod : BaseUnityPlugin
     // 多档位存档系统
     private static Dictionary<int, SaveSlot> saveSlots = new Dictionary<int, SaveSlot>();
 
-    // Alt+6功能的入口点轮换索引
+    // Alt+6功能的入口点轮换索引（同场景内轮换，切换场景时重置）
     private static int currentEntryPointIndex = 0;
+
+    // 记录上次使用Alt+6的场景，用于检测场景切换并重置索引
+    private static string lastUsedScene = "";
 
     // 手柄轴输入状态跟踪
     private static bool wasVerticalPressed = false;
@@ -104,7 +107,6 @@ public class TeleportMod : BaseUnityPlugin
     public class PersistentData
     {
         public Dictionary<int, SerializableSaveSlot> saveSlots = new Dictionary<int, SerializableSaveSlot>();
-        public int currentEntryPointIndex = 0;
     }
 
     [System.Serializable]
@@ -271,9 +273,6 @@ public class TeleportMod : BaseUnityPlugin
                         }
                     }
 
-                    // 恢复入口点索引
-                    currentEntryPointIndex = data.currentEntryPointIndex;
-
                     Logger?.LogInfo($"已加载持久化数据：{data.saveSlots.Count} 个存档槽 | Loaded persistent data: {data.saveSlots.Count} save slots");
                 }
             }
@@ -303,9 +302,6 @@ public class TeleportMod : BaseUnityPlugin
                     data.saveSlots[kvp.Key] = new SerializableSaveSlot(kvp.Value);
                 }
             }
-
-            // 保存入口点索引
-            data.currentEntryPointIndex = currentEntryPointIndex;
 
             string json = JsonConvert.SerializeObject(data, Formatting.Indented);
             string filePath = GetSaveFilePath();
@@ -773,9 +769,6 @@ public class TeleportMod : BaseUnityPlugin
             // 清空内存中的存档数据
             saveSlots.Clear();
 
-            // 重置入口点索引
-            currentEntryPointIndex = 0;
-
             // 保存空数据到JSON文件
             SavePersistentData();
 
@@ -926,6 +919,19 @@ public class TeleportMod : BaseUnityPlugin
             }
 
             string currentScene = GameManager.instance.sceneName;
+
+            // 检查是否是新场景，如果是则重置索引到0
+            if (lastUsedScene != currentScene)
+            {
+                currentEntryPointIndex = 0;
+                lastUsedScene = currentScene;
+                LogInfo($"检测到新场景，重置入口点索引: {currentScene}");
+            }
+            else
+            {
+                LogInfo($"同一场景，继续轮换: {currentScene}，当前索引: {currentEntryPointIndex}");
+            }
+
             LogInfo($"正在重新进入当前场景的安全入口点: {currentScene}");
 
             // 获取当前场景的下一个安全入口点（轮换）

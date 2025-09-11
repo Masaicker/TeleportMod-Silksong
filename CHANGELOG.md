@@ -1,3 +1,7 @@
+# v1.1.1
+* 优化了安全重生的功能
+* Improved safe respawn functionality
+
 # v1.1.0
 * 新增安全状态检查功能，防止在角色死亡、坐椅子、重生时进行保存和传送操作，避免卡BUG
 * Added safety state checks to prevent save and teleport operations during death, sitting on bench, or respawning to avoid bugs
