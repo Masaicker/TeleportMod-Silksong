@@ -14,7 +14,7 @@ using Newtonsoft.Json;
 using GlobalEnums;
 using InControl;
 
-[BepInPlugin("Mhz.TeleportMod", "Teleport Mod", "1.1.1")]
+[BepInPlugin("Mhz.TeleportMod", "Teleport Mod", "1.1.2")]
 public class TeleportMod : BaseUnityPlugin
 {
     private new static ManualLogSource? Logger;
@@ -1541,11 +1541,24 @@ public class TeleportMod : BaseUnityPlugin
             yield break;
         }
 
-        // 等待场景加载完成
-        yield return new WaitWhile(() => GameManager.instance != null && GameManager.instance.IsInSceneTransition);
+        // 等待场景加载完成 - 使用游戏内部精确的等待条件
+        yield return new WaitWhile(() =>
+        {
+            var gm = GameManager.instance;
+            var hc = HeroController.instance;
 
-        // 等待额外一小段时间确保所有组件都初始化完成
-        yield return new WaitForSeconds(0.5f);
+            if (gm == null || hc == null) return true;
+
+            // 使用游戏内部标准的等待条件（参考ProjectBenchmark.cs）
+            return gm.IsInSceneTransition || !hc.isHeroInPosition || hc.cState.transitioning;
+        });
+
+        // 额外等待角色完全可以接受输入
+        yield return new WaitUntil(() =>
+        {
+            var hc = HeroController.instance;
+            return hc != null && hc.CanInput();
+        });
 
         // 场景切换完成后，处理目标位置
         try

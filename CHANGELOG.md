@@ -1,3 +1,7 @@
+# v1.1.2
+* 优化传送等待机制，提升稳定性，减少角色传送后在屏幕外、摄像头不跟随等传送BUG发生几率
+* Optimized teleport waiting mechanism, improved stability, reduced occurrence probability of teleport bugs like hero out of screen or camera not following
+
 # v1.1.1
 * 优化了安全重生的功能
 * Improved safe respawn functionality
