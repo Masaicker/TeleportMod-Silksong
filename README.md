@@ -10,7 +10,7 @@ A simple teleportation mod for Hollow Knight: Silksong.
 <summary><h3>📋 Known Issues & Solutions</h3></summary>
 
 #### 🔧 Camera Issues
-If the character appears off-screen after teleporting, or the camera doesn't follow character movement, this is usually caused by skipping the game's camera transition mechanism during teleportation. For solutions, please refer to the Safe Respawn function in the [Troubleshooting Guide](#troubleshooting).
+If you find the character is off-screen after teleporting, or the camera doesn't follow character movement (character walks directly out of screen boundaries), this is usually caused by skipping the game's camera transition mechanism during teleportation. For solutions, please refer to the Safe Respawn function in the [Troubleshooting Guide](#troubleshooting).
 
 #### ⚠️ Teleporting to Unlocked Entry Points  
 Both teleportation and Safe Respawn functions may sometimes teleport the character to unlocked entry points. Due to potential obstacles at unlocked entrances, the character might be "pushed into" unexpected closed areas. If you find yourself trapped in a scene that you cannot normally exit, please:
