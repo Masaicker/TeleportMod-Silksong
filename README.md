@@ -96,45 +96,53 @@ All gamepad controls are fully customizable in the config file. Here's the compl
 
 ### Safety Guidelines
 
-```
-⚠️ Important: Please follow these safety guidelines to avoid game bugs and data corruption!
-```
+> **⚠️ Important: Please follow these safety guidelines to avoid game bugs and data corruption!**
 
 #### When it's safe to use:
-✅ Only save or teleport when your character is fully controllable  
-✅ In normal game scenes, when not in combat
+✅ Only save or teleport when your **character is fully controllable**  
+✅ In **normal game scenes**, when **not in combat**
 
 #### Dangerous situations - DO NOT use:
 ❌ **During boss battles**  
 ❌ **Inside closed combat areas**  
-❌ While sitting on benches  
-❌ During cutscenes or animations  
-❌ When character is controlled or immobilized  
-❌ During loading/saving processes  
-❌ During any special states or triggered events
+❌ **During cutscenes or animations**  
+❌ **When character is controlled or immobilized**  
+❌ **During any special states or triggered events**
 
 #### Important Notes:
-⏱️ Avoid multiple teleportations in short time (like teleporting multiple times within 1 second)  
-⚠️ Do not teleport immediately after death
+⚠️ **Avoid multiple teleportations in short time** (like teleporting multiple times within 1 second)  
+⚠️ **Do not teleport immediately after death**
+
+---
 
 ### Troubleshooting:
 
-🆘 **If stuck/camera lost/character floating and unable to open menu:**
+#### 🆘 If stuck/camera lost/character floating and unable to open menu:
 
-1. First try: **Safe Respawn** (Keyboard: `Alt+6`, Gamepad: `LB+RB+Y`), if teleported to entry point, then use load position as needed  
-   Example: If character is off-screen after loading save, or camera doesn't follow character movement, use Alt+6 safe respawn, then reload the same save slot coordinates to fix camera/view issues
-2. Character completely out of control, or character floating and not landing: **Emergency return to main menu** (Keyboard: `Ctrl+F9`, no gamepad shortcut)  
-   ⚠️ **Important**: Do NOT use emergency return to main menu when character is dead
-3. Still not working, completely unresponsive: **Restart the game**
+1. **First try: Safe Respawn** (Keyboard: `Alt+6`, Gamepad: `LB+RB+Y`)  
+   If teleported to entry point, then use load position as needed  
+   > 💡 Example: If character is off-screen after loading save, or camera doesn't follow character movement, use `Alt+6` safe respawn, then reload the same save slot coordinates to fix camera/view issues
 
-🚨 **All save data lost or stuck in a scene:**
+2. **Character completely out of control, or character floating and not landing: Emergency return to main menu** (Keyboard: `Ctrl+F9`, no gamepad shortcut)  
+   > ⚠️ **Important**: **Do NOT use emergency return to main menu when character is dead**
 
-If all your save slots are lost or you're trapped in an unescapable scene, use **Emergency Teleport** (Keyboard: `Alt+-` [minus key], Gamepad: `LB+RB+X`) to instantly teleport to a preset safe location (starting town station). This works independently of your save data.
+3. **Still not working, completely unresponsive: Restart the game**
+
+---
+
+#### 🚨 All save data lost or stuck in a scene:
+
+If all your **save slots are lost** or you're trapped in an unescapable scene, use **Emergency Teleport** (Keyboard: `Alt+-` [minus key], Gamepad: `LB+RB+X`) to instantly teleport to a **preset safe location** (starting town station).
+
+> **This works independently of your save data**
+
+---
 
 ### Emergency rescue config:
 
-If all methods fail, manually edit the save file with this safe config:  
-⚠️ **Important:** Close the game first, modify and save, then restart the game, and load slot 1 after entering the game (Keyboard: `Alt+1`, Gamepad: `LB+RB+Up`)
+If all methods fail, you can **manually edit the save file** with this safe config:
+
+> ⚠️ **Important:** **Close the game first**, modify and save, then restart the game, and load slot 1 after entering the game (Keyboard: `Alt+1`, Gamepad: `LB+RB+Up`)
 
 ```json
 {
@@ -151,7 +159,7 @@ If all methods fail, manually edit the save file with this safe config:
 }
 ```
 
-Slot 1 defaults to the station in the starting town, which is **absolutely safe**.
+**Slot 1 defaults to the station in the starting town, which is absolutely safe.**
 
 **Config file location:**  
 `C:\Users\[Username]\AppData\LocalLow\Team Cherry\Hollow Knight Silksong\TeleportMod\savedata.json`
