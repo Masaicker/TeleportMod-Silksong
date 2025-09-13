@@ -51,8 +51,6 @@
 
 #### 🎮 手柄按键对照表详细说明
 
-所有手柄操作都可以在配置文件中完全自定义。以下是完整按键对照：
-
 **方向键:**
 - `DPadUp` = 方向键上
 - `DPadDown` = 方向键下
@@ -160,8 +158,7 @@
       "scene": "Bellway_01",
       "hasData": true
     }
-  },
-  "currentEntryPointIndex": 0
+  }
 }
 ```
 

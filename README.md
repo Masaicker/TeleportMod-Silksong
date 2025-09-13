@@ -51,8 +51,6 @@ Both teleportation and Safe Respawn functions may sometimes teleport the charact
 
 #### 🎮 Gamepad Key Reference
 
-All gamepad controls are fully customizable in the config file. Here's the complete key mapping:
-
 **Direction Keys:**
 - `DPadUp` = D-Pad Up
 - `DPadDown` = D-Pad Down  
@@ -154,8 +152,7 @@ If all methods fail, you can **manually edit the save file** with this safe conf
       "scene": "Bellway_01",
       "hasData": true
     }
-  },
-  "currentEntryPointIndex": 0
+  }
 }
 ```
 

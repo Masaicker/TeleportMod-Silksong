@@ -140,8 +140,8 @@ public class TeleportMod : BaseUnityPlugin
         // 初始化配置项
         enableDetailedLogging = Config.Bind("日志设置 | Logging", "启用详细日志 | Enable Detailed Logging", false, "是否启用详细的传送日志输出 | Enable detailed teleport logging output");
         enableGamepadSupport = Config.Bind("控制设置 | Controls", "启用手柄支持 | Enable Gamepad Support", true,
-            "是否启用手柄控制传送功能。操作方法：传送=LB+RB+方向键/A，保存=LB+Start+方向键/A，安全重生=LB+RB+Y，硬编码传送=LB+RB+X，重置所有坐标=LB+Select+Start | " +
-            "Enable gamepad control for teleport functions. Controls: Teleport=LB+RB+Directional/A, Save=LB+Start+Directional/A, Safe respawn=LB+RB+Y, Hardcoded teleport=LB+RB+X, Reset all coordinates=LB+Select+Start");
+            "是否启用手柄控制传送功能。📖 完整操作方案请查看 README.md | " +
+            "Enable gamepad control for teleport functions. 📖 For complete operation guide, please check README.md");
 
         // 音效设置
         enableEasterEggAudio = Config.Bind("音效设置 | Audio Settings", "启用彩蛋音效 | Enable Easter Egg Audio", false,
