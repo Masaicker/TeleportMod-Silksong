@@ -14,7 +14,7 @@ using Newtonsoft.Json;
 using GlobalEnums;
 using InControl;
 
-[BepInPlugin("Mhz.TeleportMod", "Teleport Mod", "1.1.2")]
+[BepInPlugin("Mhz.TeleportMod", "Teleport Mod", "1.1.3")]
 public class TeleportMod : BaseUnityPlugin
 {
     private new static ManualLogSource? Logger;
@@ -86,6 +86,9 @@ public class TeleportMod : BaseUnityPlugin
     private static AudioClip? cachedSaveAudioClip = null;
     private static float lastSaveAudioTime = 0f;
     private const float AUDIO_COOLDOWN = 0.1f; // 音频播放冷却时间
+
+    // 椅子传送安全偏移
+    private static readonly Vector3 BENCH_SAFE_OFFSET = new Vector3(0, 2f, 0);
 
     // 存档数据结构
     public struct SaveSlot
@@ -355,6 +358,20 @@ public class TeleportMod : BaseUnityPlugin
         {
             Logger?.LogInfo(message);
         }
+    }
+
+    // 为椅子位置添加安全偏移，防止卡地里
+    private static Vector3 ApplyBenchSafeOffset(Vector3 benchPosition)
+    {
+        // 不对占位符坐标添加偏移
+        if (benchPosition == Vector3.one || benchPosition == Vector3.zero)
+        {
+            return benchPosition;
+        }
+
+        Vector3 safePosition = benchPosition + BENCH_SAFE_OFFSET;
+        LogInfo($"椅子位置已添加安全偏移: {benchPosition} -> {safePosition}");
+        return safePosition;
     }
 
     // 检查是否允许保存和传送操作
@@ -845,20 +862,23 @@ public class TeleportMod : BaseUnityPlugin
                 return;
             }
 
+            // 为椅子位置添加Y轴偏移，防止卡地里
+            Vector3 safeBenchPosition = ApplyBenchSafeOffset(benchInfo.position);
+
             string currentScene = GameManager.instance.sceneName;
-            LogInfo($"准备传送到椅子: {benchInfo.position} 在场景: {benchInfo.scene}");
+            LogInfo($"准备传送到椅子: {safeBenchPosition} 在场景: {benchInfo.scene}");
 
             // 检查是否需要切换场景
             if (!string.IsNullOrEmpty(benchInfo.scene) && currentScene != benchInfo.scene)
             {
                 LogInfo($"需要切换场景传送到椅子: {currentScene} -> {benchInfo.scene}");
-                StartCoroutine(TeleportWithSceneChange(benchInfo.scene, benchInfo.position));
+                StartCoroutine(TeleportWithSceneChange(benchInfo.scene, safeBenchPosition));
             }
             else
             {
                 // 在同一场景，直接传送
                 LogInfo("在当前场景传送到椅子");
-                PerformTeleport(benchInfo.position);
+                PerformTeleport(safeBenchPosition);
             }
         }
         catch (Exception ex)
@@ -942,13 +962,16 @@ public class TeleportMod : BaseUnityPlugin
                 var benchInfo = GetBenchPositionAndScene();
                 if (benchInfo.position != Vector3.zero && !string.IsNullOrEmpty(benchInfo.scene))
                 {
+                    // 为椅子位置添加Y轴偏移，防止卡地里
+                    Vector3 safeBenchPosition = ApplyBenchSafeOffset(benchInfo.position);
+
                     if (benchInfo.scene == currentScene)
                     {
-                        PerformTeleport(benchInfo.position);
+                        PerformTeleport(safeBenchPosition);
                     }
                     else
                     {
-                        StartCoroutine(TeleportWithSceneChange(benchInfo.scene, benchInfo.position));
+                        StartCoroutine(TeleportWithSceneChange(benchInfo.scene, safeBenchPosition));
                     }
                 }
                 return;
@@ -1422,7 +1445,10 @@ public class TeleportMod : BaseUnityPlugin
                     Logger?.LogWarning("未找到有效的椅子位置或场景信息");
                     return;
                 }
-                LogInfo($"准备传送到椅子位置: {targetPosition} 在场景: {targetScene}");
+
+                // 为椅子位置添加Y轴偏移，防止卡地里
+                targetPosition = ApplyBenchSafeOffset(targetPosition);
+                LogInfo($"椅子位置已添加安全偏移，准备传送到椅子位置: {targetPosition} 在场景: {targetScene}");
             }
 
             // 检查是否需要切换场景
@@ -1572,8 +1598,9 @@ public class TeleportMod : BaseUnityPlugin
                 var benchInfo = GetBenchPositionAndScene();
                 if (benchInfo.position != Vector3.zero && benchInfo.position != Vector3.one)
                 {
-                    finalPosition = benchInfo.position;
-                    LogInfo($"找到椅子坐标: {finalPosition}");
+                    // 为椅子位置添加Y轴偏移，防止卡地里
+                    finalPosition = ApplyBenchSafeOffset(benchInfo.position);
+                    LogInfo($"找到椅子坐标: {benchInfo.position}");
                 }
                 else
                 {

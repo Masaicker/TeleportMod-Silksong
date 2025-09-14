@@ -1,3 +1,7 @@
+# v1.1.3
+* 修复椅子传送卡进地板的问题，传送到椅子时自动添加安全偏移，提升传送体验
+* Fixed bench teleport stuck in ground issue, automatically applies safe offset when teleporting to bench, improved teleport experience
+
 # v1.1.2
 * 优化传送等待机制，提升稳定性，减少角色传送后在屏幕外、摄像头不跟随等传送BUG发生几率
 * Optimized teleport waiting mechanism, improved stability, reduced occurrence probability of teleport bugs like hero out of screen or camera not following
