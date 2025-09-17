@@ -26,7 +26,9 @@ Both teleportation and Safe Respawn functions may sometimes teleport the charact
 
 #### Keyboard Controls
 - `Ctrl + 1~5`: Save position 🔊 Sound effect
+- `Ctrl + a~z`: Save position 🔊 Sound effect
 - `Alt + 1~5`: Load position (no save data: auto teleport to bench)
+- `Alt + a~z`: Load position (no save data: auto teleport to bench)
 - `Alt + 6`: **Safe respawn** (cycle entry points)
 - `Alt + 7`: **Teleport to bench** (last respawn point)
 - `Alt + 0`: **Reset all coordinates**
