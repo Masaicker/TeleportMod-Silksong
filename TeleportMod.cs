@@ -597,6 +597,17 @@ public class TeleportMod : BaseUnityPlugin
                     break;
                 }
             }
+            // 添加 对A-Z键的支持，映射到10-35档位
+            for (char c = 'A'; c <= 'Z'; c++)
+            {
+                KeyCode slotKey = (KeyCode)Enum.Parse(typeof(KeyCode), c.ToString());
+                if (Input.GetKeyDown(slotKey))
+                {
+                    int slotNumber = c - 'A' + 10; // A=10, B=11, ..., Z=35
+                    SaveToSlot(slotNumber);
+                    break;
+                }
+            }
         }
         // 传送修饰键+存档槽按键 读取对应档位
         else if (IsModifierKeyPressed(teleportModifierKey?.Value ?? "LeftAlt"))
@@ -607,6 +618,16 @@ public class TeleportMod : BaseUnityPlugin
                 if (slotKey != KeyCode.None && Input.GetKeyDown(slotKey))
                 {
                     LoadFromSlot(i);
+                    break;
+                }
+            }
+            for (char c = 'A'; c <= 'Z'; c++)
+            {
+                KeyCode slotKey = (KeyCode)Enum.Parse(typeof(KeyCode), c.ToString());
+                if (Input.GetKeyDown(slotKey))
+                {
+                    int slotNumber = c - 'A' + 10; // A=10, B=11, ..., Z=35
+                    LoadFromSlot(slotNumber);
                     break;
                 }
             }
