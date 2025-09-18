@@ -969,9 +969,15 @@ public class TeleportUIManager : MonoBehaviour
         infoRect.offsetMin = new Vector2(10, 5);     // 统一边距
         infoRect.offsetMax = new Vector2(-5, -5);    // 右侧减少边距，为按钮让路
 
-        // 存档名称 - 增强可见性
+        // 存档名称 - 增强可见性，扩展存档添加序号
+        string displayNameWithNumber = slotData.displayName;
+        if (!slotId.StartsWith("traditional_") && slotData.serialNumber > 0)
+        {
+            displayNameWithNumber = $"{slotData.serialNumber}. {slotData.displayName}";
+        }
+
         var nameText = CreateStyledText(infoContainer.transform, "NameText",
-            slotData.displayName, 18, FontStyle.Bold,
+            displayNameWithNumber, 18, FontStyle.Bold,
             new Vector2(0.02f, 0.75f), new Vector2(0.98f, 1),
             new Color(1f, 1f, 1f, 1f), TextAnchor.UpperLeft);
 

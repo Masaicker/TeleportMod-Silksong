@@ -15,7 +15,7 @@ using GlobalEnums;
 using InControl;
 using HarmonyLib;
 
-[BepInPlugin("Mhz.TeleportMod", "Teleport Mod", "1.2.0")]
+[BepInPlugin("Mhz.TeleportMod", "Teleport Mod", "1.2.1")]
 public class TeleportMod : BaseUnityPlugin
 {
     public new static ManualLogSource? Logger;
@@ -71,6 +71,9 @@ public class TeleportMod : BaseUnityPlugin
     // 扩展存档系统 - 支持无限存档
     private static Dictionary<string, ExtendedSaveSlot> extendedSaveSlots = new Dictionary<string, ExtendedSaveSlot>();
 
+    // 全局序号计数器（持续递增，不重复使用）
+    private static int nextSerialNumber = 1;
+
     // UI管理器
     private static TeleportUIManager? uiManager;
 
@@ -103,12 +106,22 @@ public class TeleportMod : BaseUnityPlugin
         public Vector3 position;
         public string scene;
         public bool hasData;
+        public DateTime saveTime;
 
         public SaveSlot(Vector3 pos, string sceneName)
         {
             position = pos;
             scene = sceneName;
             hasData = true;
+            saveTime = DateTime.Now;
+        }
+
+        public SaveSlot(Vector3 pos, string sceneName, DateTime time)
+        {
+            position = pos;
+            scene = sceneName;
+            hasData = true;
+            saveTime = time;
         }
     }
 
@@ -121,25 +134,30 @@ public class TeleportMod : BaseUnityPlugin
         public string displayName = "";
         public bool hasData = false;
         public string customNote = "";
+        public int serialNumber = 0;  // 序号（用于UI显示排序）
 
         public ExtendedSaveSlot() { }
 
-        public ExtendedSaveSlot(Vector3 pos, string sceneName, string? name = null, string? note = null)
+        public ExtendedSaveSlot(Vector3 pos, string sceneName, string? name = null, string? note = null, bool assignNewSerial = true)
         {
             position = pos;
             scene = sceneName ?? "";
             saveTime = DateTime.Now;
-            displayName = name ?? $"Save {saveTime:MM-dd HH:mm}";
+            // 使用场景名+时间戳作为默认名称（只显示时间，不显示日期）
+            displayName = name ?? $"{sceneName} {saveTime:HH:mm}";
             customNote = note ?? "";
             hasData = true;
+            // 只在需要时分配新序号（新建存档），覆盖时不分配
+            serialNumber = assignNewSerial ? nextSerialNumber++ : 0;
         }
 
         public ExtendedSaveSlot(SaveSlot oldSlot)
         {
             position = oldSlot.position;
             scene = oldSlot.scene ?? "";
-            saveTime = DateTime.Now;
-            displayName = $"Legacy Save {saveTime:MM-dd HH:mm}";
+            saveTime = oldSlot.saveTime;  // 保持原始时间戳，不重新设置
+            // 传统存档使用简单的Legacy标识，具体名称在GetAllSaveSlots中设置
+            displayName = $"Legacy Save {saveTime:HH:mm}";
             customNote = "";
             hasData = oldSlot.hasData;
         }
@@ -151,6 +169,7 @@ public class TeleportMod : BaseUnityPlugin
     {
         public Dictionary<int, SerializableSaveSlot> saveSlots = new Dictionary<int, SerializableSaveSlot>();
         public Dictionary<string, SerializableExtendedSaveSlot> extendedSlots = new Dictionary<string, SerializableExtendedSaveSlot>();
+        public int nextSerialNumber = 1;  // 序号计数器
     }
 
     [System.Serializable]
@@ -159,6 +178,7 @@ public class TeleportMod : BaseUnityPlugin
         public float x, y, z;
         public string scene = "";
         public bool hasData = false;
+        public string saveTimeString = "";
 
         public SerializableSaveSlot() { }
 
@@ -169,11 +189,22 @@ public class TeleportMod : BaseUnityPlugin
             z = slot.position.z;
             scene = slot.scene ?? "";
             hasData = slot.hasData;
+            saveTimeString = slot.saveTime.ToString("yyyy-MM-dd HH:mm:ss");
         }
 
         public SaveSlot ToSaveSlot()
         {
-            return new SaveSlot(new Vector3(x, y, z), scene);
+            // 解析保存时间
+            DateTime saveTime;
+            if (DateTime.TryParse(saveTimeString, out saveTime))
+            {
+                return new SaveSlot(new Vector3(x, y, z), scene, saveTime);
+            }
+            else
+            {
+                // 如果解析失败，使用默认时间
+                return new SaveSlot(new Vector3(x, y, z), scene);
+            }
         }
     }
 
@@ -186,6 +217,7 @@ public class TeleportMod : BaseUnityPlugin
         public string displayName = "";
         public bool hasData = false;
         public string customNote = "";
+        public int serialNumber = 0;  // 序号
 
         public SerializableExtendedSaveSlot() { }
 
@@ -199,6 +231,7 @@ public class TeleportMod : BaseUnityPlugin
             displayName = slot.displayName ?? "";
             customNote = slot.customNote ?? "";
             hasData = slot.hasData;
+            serialNumber = slot.serialNumber;
         }
 
         public ExtendedSaveSlot ToExtendedSaveSlot()
@@ -209,6 +242,7 @@ public class TeleportMod : BaseUnityPlugin
             slot.displayName = displayName ?? "";
             slot.customNote = customNote ?? "";
             slot.hasData = hasData;
+            slot.serialNumber = serialNumber;
 
             // 解析保存时间
             if (DateTime.TryParse(saveTimeString, out DateTime parsedTime))
@@ -390,13 +424,22 @@ public class TeleportMod : BaseUnityPlugin
                         {
                             if (kvp.Value != null && kvp.Value.hasData)
                             {
-                                extendedSaveSlots[kvp.Key] = kvp.Value.ToExtendedSaveSlot();
+                                var slot = kvp.Value.ToExtendedSaveSlot();
+                                // 对于旧数据（没有序号），分配新序号
+                                if (slot.serialNumber <= 0)
+                                {
+                                    slot.serialNumber = nextSerialNumber++;
+                                }
+                                extendedSaveSlots[kvp.Key] = slot;
                             }
                         }
                     }
 
+                    // 恢复序号计数器，确保不会重复分配
+                    nextSerialNumber = Math.Max(data.nextSerialNumber, nextSerialNumber);
+
                     int totalSlots = (data.saveSlots?.Count ?? 0) + (data.extendedSlots?.Count ?? 0);
-                    Logger?.LogInfo($"已加载持久化数据：{data.saveSlots?.Count ?? 0} 个传统存档，{data.extendedSlots?.Count ?? 0} 个扩展存档 | Loaded persistent data: {data.saveSlots?.Count ?? 0} traditional slots, {data.extendedSlots?.Count ?? 0} extended slots");
+                    Logger?.LogInfo($"已加载持久化数据：{data.saveSlots?.Count ?? 0} 个传统存档，{data.extendedSlots?.Count ?? 0} 个扩展存档，下一个序号: {nextSerialNumber} | Loaded persistent data: {data.saveSlots?.Count ?? 0} traditional slots, {data.extendedSlots?.Count ?? 0} extended slots, next serial: {nextSerialNumber}");
                 }
             }
             else
@@ -434,6 +477,9 @@ public class TeleportMod : BaseUnityPlugin
                     data.extendedSlots[kvp.Key] = new SerializableExtendedSaveSlot(kvp.Value);
                 }
             }
+
+            // 保存序号计数器
+            data.nextSerialNumber = nextSerialNumber;
 
             string json = JsonConvert.SerializeObject(data, Formatting.Indented);
             string filePath = GetSaveFilePath();
@@ -1108,14 +1154,9 @@ public class TeleportMod : BaseUnityPlugin
                 // 检查是否是传统存档
                 if (slotId.StartsWith("traditional_"))
                 {
-                    // 覆盖传统存档
+                    // 覆盖传统存档（使用正确的构造函数设置时间戳）
                     int slotNumber = int.Parse(slotId.Replace("traditional_", ""));
-                    var newSlot = new SaveSlot
-                    {
-                        position = currentPosition,
-                        scene = currentScene,
-                        hasData = true
-                    };
+                    var newSlot = new SaveSlot(currentPosition, currentScene);  // 使用构造函数自动设置当前时间
 
                     saveSlots[slotNumber] = newSlot;
                     SavePersistentData();
@@ -1123,13 +1164,14 @@ public class TeleportMod : BaseUnityPlugin
                 }
                 else if (extendedSaveSlots.ContainsKey(slotId))
                 {
-                    // 覆盖扩展存档，保持原显示名称
+                    // 覆盖扩展存档，生成新的场景+时间戳名称，但保持原序号，不浪费计数器
                     var oldSlot = extendedSaveSlots[slotId];
-                    var newSlot = new ExtendedSaveSlot(currentPosition, currentScene, oldSlot.displayName);
+                    var newSlot = new ExtendedSaveSlot(currentPosition, currentScene, assignNewSerial: false);  // 不分配新序号
+                    newSlot.serialNumber = oldSlot.serialNumber;  // 保持原序号，不改变
 
                     extendedSaveSlots[slotId] = newSlot;
                     SavePersistentData();
-                    LogInfo($"已覆盖存档: {newSlot.displayName} ({slotId})");
+                    LogInfo($"已覆盖存档: {newSlot.displayName} ({slotId}), 保持序号: {newSlot.serialNumber}, 计数器未增加");
                 }
                 else
                 {
@@ -1337,7 +1379,8 @@ public class TeleportMod : BaseUnityPlugin
                 {
                     string traditionalId = $"traditional_{kvp.Key}";
                     var extendedSlot = new ExtendedSaveSlot(kvp.Value);
-                    extendedSlot.displayName = $"快捷存档 {kvp.Key} | Slot {kvp.Key}";
+                    // 传统存档保持原有格式，优化英文翻译
+                    extendedSlot.displayName = $"快捷存档 {kvp.Key} | Hotkey {kvp.Key}";
                     allSlots[traditionalId] = extendedSlot;
                 }
             }
@@ -1605,9 +1648,10 @@ public class TeleportMod : BaseUnityPlugin
 
             if (safePosition != Vector3.zero)
             {
-                // 找到安全位置，更新存档槽
+                // 找到安全位置，更新存档槽（保持原始时间戳）
                 string currentScene = GameManager.instance.sceneName;
-                saveSlots[slotNumber] = new SaveSlot(safePosition, currentScene);
+                DateTime originalTime = saveSlots[slotNumber].saveTime;
+                saveSlots[slotNumber] = new SaveSlot(safePosition, currentScene, originalTime);
                 LogInfo($"档位 {slotNumber} 已修正为安全位置: {targetPosition} -> {safePosition}");
                 return safePosition;
             }
