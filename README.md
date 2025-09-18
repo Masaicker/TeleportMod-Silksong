@@ -20,17 +20,26 @@ Both teleportation and Safe Respawn functions may sometimes teleport the charact
 
 📍 **Special Note**: The "MEMORIUM" scene (requires double jump to reach) is prone to this issue. If teleported there before unlocking double jump, you will be trapped in the scene, please be extra careful.
 
+#### 🗺️ Map Key Hold Causing Incomplete Teleportation
+During cross-scene teleportation, if the teleport key combination includes the map key (gamepad default LB), holding the map key may cause teleportation only to the scene entrance rather than the target coordinates. When this occurs:
+- Release the map key
+- Teleport to the same coordinate save again
+- Or use the Safe Respawn function
+
+💡 **Tip**: While this operation method is uncommon, both keyboard and gamepad can trigger this issue.
+
 </details>
 
 ### Usage
 
 #### Keyboard Controls
-- `Ctrl + 1~5`: Save position 🔊 Sound effect
-- `Alt + 1~5`: Load position (no save data: auto teleport to bench)
+- `Ctrl + 1~5`: Quick save position 🔊 Sound effect
+- `Alt + 1~5`: Quick load position (no save data: auto teleport to bench)
 - `Alt + 6`: **Safe respawn** (cycle entry points)
 - `Alt + 7`: **Teleport to bench** (last respawn point)
 - `Alt + 0`: **Reset all coordinates**
-- `Alt + -`: **Emergency teleport** (to preset safe location) [minus key]
+- `Alt + - [minus key]`: **Emergency teleport** (to preset safe location) 
+- 🌟 ``Ctrl + ` [tilde key]``: **Open Teleport Interface** - Unlimited save slots with UI support for save, load, delete, overwrite, bench teleport, reset coordinates, safe respawn, and more
 - **🆘 `Ctrl + F9`: Emergency return to main menu** (character out of control/stuck)
 
 ```

@@ -1,3 +1,9 @@
+# v1.2.0
+* 新增传送UI界面功能！按下 `Ctrl + ` ` 键（位于数字键1左边，ESC键下面，同时也是波浪号~键）打开可视化传送界面
+* 支持无限存档槽，可在UI内随意存档、读档、删除、覆盖、传送椅子、重置坐标、安全重生等所有功能
+* Added Teleport UI Interface! Press `Ctrl + ` ` key (located to the left of number key 1, below the ESC key, also the tilde ~ key) to open visual teleport interface
+* Unlimited save slots support, all functions available in UI: save, load, delete, overwrite, bench teleport, reset coordinates, safe respawn, and more
+
 # v1.1.3
 * 修复椅子传送卡进地板的问题，传送到椅子时自动添加安全偏移，提升传送体验
 * Fixed bench teleport stuck in ground issue, automatically applies safe offset when teleporting to bench, improved teleport experience

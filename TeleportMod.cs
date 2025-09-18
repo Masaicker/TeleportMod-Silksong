@@ -13,14 +13,15 @@ using System.Reflection;
 using Newtonsoft.Json;
 using GlobalEnums;
 using InControl;
+using HarmonyLib;
 
-[BepInPlugin("Mhz.TeleportMod", "Teleport Mod", "1.1.3")]
+[BepInPlugin("Mhz.TeleportMod", "Teleport Mod", "1.2.0")]
 public class TeleportMod : BaseUnityPlugin
 {
-    private new static ManualLogSource? Logger;
+    public new static ManualLogSource? Logger;
 
     // 配置项
-    private static ConfigEntry<bool>? enableDetailedLogging;
+    public static ConfigEntry<bool>? enableDetailedLogging;
     private static ConfigEntry<bool>? enableGamepadSupport;
     private static ConfigEntry<bool>? enableEasterEggAudio;
     private static ConfigEntry<string>? saveModifierKey;
@@ -67,6 +68,12 @@ public class TeleportMod : BaseUnityPlugin
     // 多档位存档系统
     private static Dictionary<int, SaveSlot> saveSlots = new Dictionary<int, SaveSlot>();
 
+    // 扩展存档系统 - 支持无限存档
+    private static Dictionary<string, ExtendedSaveSlot> extendedSaveSlots = new Dictionary<string, ExtendedSaveSlot>();
+
+    // UI管理器
+    private static TeleportUIManager? uiManager;
+
     // Alt+6功能的入口点轮换索引（同场景内轮换，切换场景时重置）
     private static int currentEntryPointIndex = 0;
 
@@ -105,11 +112,45 @@ public class TeleportMod : BaseUnityPlugin
         }
     }
 
+    // 扩展存档数据结构 - 支持更多信息
+    public class ExtendedSaveSlot
+    {
+        public Vector3 position;
+        public string scene = "";
+        public DateTime saveTime;
+        public string displayName = "";
+        public bool hasData = false;
+        public string customNote = "";
+
+        public ExtendedSaveSlot() { }
+
+        public ExtendedSaveSlot(Vector3 pos, string sceneName, string? name = null, string? note = null)
+        {
+            position = pos;
+            scene = sceneName ?? "";
+            saveTime = DateTime.Now;
+            displayName = name ?? $"Save {saveTime:MM-dd HH:mm}";
+            customNote = note ?? "";
+            hasData = true;
+        }
+
+        public ExtendedSaveSlot(SaveSlot oldSlot)
+        {
+            position = oldSlot.position;
+            scene = oldSlot.scene ?? "";
+            saveTime = DateTime.Now;
+            displayName = $"Legacy Save {saveTime:MM-dd HH:mm}";
+            customNote = "";
+            hasData = oldSlot.hasData;
+        }
+    }
+
     // 可序列化的存档数据
     [System.Serializable]
     public class PersistentData
     {
         public Dictionary<int, SerializableSaveSlot> saveSlots = new Dictionary<int, SerializableSaveSlot>();
+        public Dictionary<string, SerializableExtendedSaveSlot> extendedSlots = new Dictionary<string, SerializableExtendedSaveSlot>();
     }
 
     [System.Serializable]
@@ -136,9 +177,68 @@ public class TeleportMod : BaseUnityPlugin
         }
     }
 
+    [System.Serializable]
+    public class SerializableExtendedSaveSlot
+    {
+        public float x, y, z;
+        public string scene = "";
+        public string saveTimeString = "";
+        public string displayName = "";
+        public bool hasData = false;
+        public string customNote = "";
+
+        public SerializableExtendedSaveSlot() { }
+
+        public SerializableExtendedSaveSlot(ExtendedSaveSlot slot)
+        {
+            x = slot.position.x;
+            y = slot.position.y;
+            z = slot.position.z;
+            scene = slot.scene ?? "";
+            saveTimeString = slot.saveTime.ToString("yyyy-MM-dd HH:mm:ss");
+            displayName = slot.displayName ?? "";
+            customNote = slot.customNote ?? "";
+            hasData = slot.hasData;
+        }
+
+        public ExtendedSaveSlot ToExtendedSaveSlot()
+        {
+            var slot = new ExtendedSaveSlot();
+            slot.position = new Vector3(x, y, z);
+            slot.scene = scene ?? "";
+            slot.displayName = displayName ?? "";
+            slot.customNote = customNote ?? "";
+            slot.hasData = hasData;
+
+            // 解析保存时间
+            if (DateTime.TryParse(saveTimeString, out DateTime parsedTime))
+            {
+                slot.saveTime = parsedTime;
+            }
+            else
+            {
+                slot.saveTime = DateTime.Now;
+            }
+
+            return slot;
+        }
+    }
+
     private void Awake()
     {
         Logger = base.Logger;
+
+        // 初始化Harmony补丁
+        try
+        {
+            var harmony = new Harmony("Mhz.TeleportMod");
+            harmony.PatchAll();
+            Logger?.LogInfo("Harmony补丁已应用");
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogError($"初始化Harmony时发生错误: {ex.Message}");
+        }
 
         // 初始化配置项
         enableDetailedLogging = Config.Bind("日志设置 | Logging", "启用详细日志 | Enable Detailed Logging", false, "是否启用详细的传送日志输出 | Enable detailed teleport logging output");
@@ -226,24 +326,24 @@ public class TeleportMod : BaseUnityPlugin
         benchTeleportKey = Config.Bind("键盘特殊功能 | Keyboard Special", "键盘椅子传送 | Keyboard Bench Teleport", "Alpha7",
             "键盘传送到椅子（最后重生点）的按键 | Keyboard key for teleporting to bench (last respawn point)");
 
-        Logger.LogInfo("Teleport Mod 已加载!");
+        Logger?.LogInfo("Teleport Mod 已加载!");
 
         if (enableDetailedLogging?.Value == true)
         {
-            Logger.LogInfo("详细日志已启用 | Detailed logging enabled");
+            Logger?.LogInfo("详细日志已启用 | Detailed logging enabled");
         }
         else
         {
-            Logger.LogInfo("详细日志已禁用，只显示重要信息 | Detailed logging disabled, showing important messages only");
+            Logger?.LogInfo("详细日志已禁用，只显示重要信息 | Detailed logging disabled, showing important messages only");
         }
 
         if (enableGamepadSupport?.Value == true)
         {
-            Logger.LogInfo("手柄支持已启用 | Gamepad support enabled");
+            Logger?.LogInfo("手柄支持已启用 | Gamepad support enabled");
         }
         else
         {
-            Logger.LogInfo("手柄支持已禁用 | Gamepad support disabled");
+            Logger?.LogInfo("手柄支持已禁用 | Gamepad support disabled");
         }
 
         // 加载持久化数据
@@ -251,6 +351,9 @@ public class TeleportMod : BaseUnityPlugin
 
         // 预加载音频文件
         StartCoroutine(PreloadAudioClip());
+
+        // 初始化UI管理器
+        InitializeUIManager();
     }
 
     // 加载持久化数据
@@ -264,19 +367,36 @@ public class TeleportMod : BaseUnityPlugin
                 string json = File.ReadAllText(filePath);
                 PersistentData? data = JsonConvert.DeserializeObject<PersistentData>(json);
 
-                if (data != null && data.saveSlots != null)
+                if (data != null)
                 {
-                    // 恢复存档槽数据
-                    saveSlots.Clear();
-                    foreach (var kvp in data.saveSlots)
+                    // 恢复传统存档槽数据
+                    if (data.saveSlots != null)
                     {
-                        if (kvp.Value != null && kvp.Value.hasData)
+                        saveSlots.Clear();
+                        foreach (var kvp in data.saveSlots)
                         {
-                            saveSlots[kvp.Key] = kvp.Value.ToSaveSlot();
+                            if (kvp.Value != null && kvp.Value.hasData)
+                            {
+                                saveSlots[kvp.Key] = kvp.Value.ToSaveSlot();
+                            }
                         }
                     }
 
-                    Logger?.LogInfo($"已加载持久化数据：{data.saveSlots.Count} 个存档槽 | Loaded persistent data: {data.saveSlots.Count} save slots");
+                    // 恢复扩展存档数据
+                    if (data.extendedSlots != null)
+                    {
+                        extendedSaveSlots.Clear();
+                        foreach (var kvp in data.extendedSlots)
+                        {
+                            if (kvp.Value != null && kvp.Value.hasData)
+                            {
+                                extendedSaveSlots[kvp.Key] = kvp.Value.ToExtendedSaveSlot();
+                            }
+                        }
+                    }
+
+                    int totalSlots = (data.saveSlots?.Count ?? 0) + (data.extendedSlots?.Count ?? 0);
+                    Logger?.LogInfo($"已加载持久化数据：{data.saveSlots?.Count ?? 0} 个传统存档，{data.extendedSlots?.Count ?? 0} 个扩展存档 | Loaded persistent data: {data.saveSlots?.Count ?? 0} traditional slots, {data.extendedSlots?.Count ?? 0} extended slots");
                 }
             }
             else
@@ -297,12 +417,21 @@ public class TeleportMod : BaseUnityPlugin
         {
             PersistentData data = new PersistentData();
 
-            // 保存存档槽数据
+            // 保存传统存档槽数据
             foreach (var kvp in saveSlots)
             {
                 if (kvp.Value.hasData)
                 {
                     data.saveSlots[kvp.Key] = new SerializableSaveSlot(kvp.Value);
+                }
+            }
+
+            // 保存扩展存档数据
+            foreach (var kvp in extendedSaveSlots)
+            {
+                if (kvp.Value.hasData)
+                {
+                    data.extendedSlots[kvp.Key] = new SerializableExtendedSaveSlot(kvp.Value);
                 }
             }
 
@@ -317,7 +446,8 @@ public class TeleportMod : BaseUnityPlugin
             }
 
             File.WriteAllText(filePath, json);
-            LogInfo($"已保存持久化数据：{data.saveSlots.Count} 个存档槽 | Saved persistent data: {data.saveSlots.Count} save slots");
+            int totalSlots = data.saveSlots.Count + data.extendedSlots.Count;
+            LogInfo($"已保存持久化数据：{data.saveSlots.Count} 个传统存档，{data.extendedSlots.Count} 个扩展存档 | Saved persistent data: {data.saveSlots.Count} traditional slots, {data.extendedSlots.Count} extended slots");
         }
         catch (Exception ex)
         {
@@ -352,7 +482,7 @@ public class TeleportMod : BaseUnityPlugin
     }
 
     // 辅助方法：只在配置启用时输出详细日志
-    private static void LogInfo(string message)
+    public static void LogInfo(string message)
     {
         if (enableDetailedLogging?.Value == true)
         {
@@ -375,7 +505,7 @@ public class TeleportMod : BaseUnityPlugin
     }
 
     // 检查是否允许保存和传送操作
-    private static bool CanPerformTeleportOperations()
+    public static bool CanPerformTeleportOperations()
     {
         try
         {
@@ -785,17 +915,448 @@ public class TeleportMod : BaseUnityPlugin
         {
             // 清空内存中的存档数据
             saveSlots.Clear();
+            extendedSaveSlots.Clear();
 
             // 保存空数据到JSON文件
             SavePersistentData();
 
             Logger?.LogWarning("已清空所有存档坐标！| All save slots cleared!");
-            Logger?.LogInfo("所有传送位置已重置，可以重新保存坐标 | All teleport positions reset, you can save new coordinates");
+            LogInfo("所有传送位置已重置，可以重新保存坐标 | All teleport positions reset, you can save new coordinates");
+
+            // 刷新UI
+            uiManager?.RefreshSlotList();
         }
         catch (Exception ex)
         {
             Logger?.LogError($"清空存档坐标时发生错误 | Error clearing save slots: {ex.Message}");
         }
+    }
+
+    // 初始化UI管理器
+    private void InitializeUIManager()
+    {
+        try
+        {
+            // 如果已经有UI管理器，先取消订阅避免重复订阅
+            UnsubscribeUIEvents();
+
+            TeleportUIManager.Initialize(Logger);
+            uiManager = TeleportUIManager.Instance;
+
+            if (uiManager != null)
+            {
+                // 订阅UI事件
+                uiManager.OnTeleportToSlot += OnUITeleportToSlot;
+                uiManager.OnDeleteSlot += OnUIDeleteSlot;
+                uiManager.OnOverwriteSlot += OnUIOverwriteSlot;
+                uiManager.OnSaveCurrentPosition += OnUISaveCurrentPosition;
+                uiManager.OnClearAllSlots += OnUIClearAllSlots;
+                uiManager.OnSafeRespawn += OnUISafeRespawn;
+                uiManager.OnBenchTeleport += OnUIBenchTeleport;
+                uiManager.OnHardcodedTeleport += OnUIHardcodedTeleport;
+
+                Logger?.LogInfo("UI管理器初始化完成");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogError($"初始化UI管理器时发生错误: {ex.Message}");
+        }
+    }
+
+    // 取消订阅UI事件
+    private void UnsubscribeUIEvents()
+    {
+        try
+        {
+            if (uiManager != null)
+            {
+                uiManager.OnTeleportToSlot -= OnUITeleportToSlot;
+                uiManager.OnDeleteSlot -= OnUIDeleteSlot;
+                uiManager.OnOverwriteSlot -= OnUIOverwriteSlot;
+                uiManager.OnSaveCurrentPosition -= OnUISaveCurrentPosition;
+                uiManager.OnClearAllSlots -= OnUIClearAllSlots;
+                uiManager.OnSafeRespawn -= OnUISafeRespawn;
+                uiManager.OnBenchTeleport -= OnUIBenchTeleport;
+                uiManager.OnHardcodedTeleport -= OnUIHardcodedTeleport;
+
+                Logger?.LogInfo("UI事件订阅已取消");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogError($"取消UI事件订阅时发生错误: {ex.Message}");
+        }
+    }
+
+    // 组件销毁时的清理工作
+    private void OnDestroy()
+    {
+        try
+        {
+            // 取消所有事件订阅
+            UnsubscribeUIEvents();
+
+            Logger?.LogInfo("TeleportMod 组件销毁清理完成");
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogError($"组件销毁清理时发生错误: {ex.Message}");
+        }
+    }
+
+    // UI事件处理 - 传送到指定存档
+    private void OnUITeleportToSlot(string slotId)
+    {
+        try
+        {
+            if (!CanPerformTeleportOperations())
+            {
+                Logger?.LogWarning("当前状态不允许传送操作");
+                return;
+            }
+
+            // 先关闭所有界面，避免传送后游戏卡住
+            CloseAllMenusBeforeTeleport();
+
+            // 检查是否是传统存档
+            if (slotId.StartsWith("traditional_"))
+            {
+                string numberStr = slotId.Substring("traditional_".Length);
+                if (int.TryParse(numberStr, out int slotNumber))
+                {
+                    LoadFromSlot(slotNumber);
+                    LogInfo($"从UI传送到传统存档: 存档槽 {slotNumber}");
+                }
+            }
+            // 检查扩展存档
+            else if (extendedSaveSlots.ContainsKey(slotId) && extendedSaveSlots[slotId].hasData)
+            {
+                var slot = extendedSaveSlots[slotId];
+                TeleportToExtendedSlot(slot);
+                LogInfo($"从UI传送到存档: {slot.displayName}");
+            }
+            else
+            {
+                Logger?.LogWarning($"存档 {slotId} 不存在或无数据");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogError($"UI传送操作失败: {ex.Message}");
+        }
+    }
+
+    // UI事件处理 - 删除指定存档
+    private void OnUIDeleteSlot(string slotId)
+    {
+        try
+        {
+            // 检查是否是传统存档
+            if (slotId.StartsWith("traditional_"))
+            {
+                string numberStr = slotId.Substring("traditional_".Length);
+                if (int.TryParse(numberStr, out int slotNumber))
+                {
+                    if (saveSlots.ContainsKey(slotNumber))
+                    {
+                        saveSlots.Remove(slotNumber);
+                        SavePersistentData();
+                        uiManager?.RefreshSlotList();
+                        LogInfo($"已删除传统存档: 存档槽 {slotNumber}");
+                        return;
+                    }
+                }
+            }
+
+            // 检查扩展存档
+            if (extendedSaveSlots.ContainsKey(slotId))
+            {
+                var slotName = extendedSaveSlots[slotId].displayName;
+                extendedSaveSlots.Remove(slotId);
+                SavePersistentData();
+                uiManager?.RefreshSlotList();
+                LogInfo($"已删除存档: {slotName} ({slotId})");
+            }
+            else
+            {
+                Logger?.LogWarning($"存档 {slotId} 不存在");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogError($"删除存档失败: {ex.Message}");
+        }
+    }
+
+    // UI事件处理 - 覆盖指定存档
+    private void OnUIOverwriteSlot(string slotId)
+    {
+        try
+        {
+            if (!CanPerformTeleportOperations())
+            {
+                Logger?.LogWarning("当前状态不允许覆盖操作");
+                return;
+            }
+
+            if (HeroController.instance != null && GameManager.instance != null)
+            {
+                Vector3 currentPosition = HeroController.instance.transform.position;
+                string currentScene = GameManager.instance.sceneName;
+
+                // 检查是否是传统存档
+                if (slotId.StartsWith("traditional_"))
+                {
+                    // 覆盖传统存档
+                    int slotNumber = int.Parse(slotId.Replace("traditional_", ""));
+                    var newSlot = new SaveSlot
+                    {
+                        position = currentPosition,
+                        scene = currentScene,
+                        hasData = true
+                    };
+
+                    saveSlots[slotNumber] = newSlot;
+                    SavePersistentData();
+                    LogInfo($"已覆盖传统存档槽 {slotNumber}: {currentScene} ({currentPosition.x:F1}, {currentPosition.y:F1})");
+                }
+                else if (extendedSaveSlots.ContainsKey(slotId))
+                {
+                    // 覆盖扩展存档，保持原显示名称
+                    var oldSlot = extendedSaveSlots[slotId];
+                    var newSlot = new ExtendedSaveSlot(currentPosition, currentScene, oldSlot.displayName);
+
+                    extendedSaveSlots[slotId] = newSlot;
+                    SavePersistentData();
+                    LogInfo($"已覆盖存档: {newSlot.displayName} ({slotId})");
+                }
+                else
+                {
+                    Logger?.LogWarning($"存档 {slotId} 不存在，无法覆盖");
+                    return;
+                }
+
+                // 刷新UI显示
+                uiManager?.RefreshSlotList();
+            }
+            else
+            {
+                Logger?.LogWarning("无法获取当前位置信息");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogError($"覆盖存档失败: {ex.Message}");
+        }
+    }
+
+    // UI事件处理 - 保存当前位置
+    private void OnUISaveCurrentPosition()
+    {
+        try
+        {
+            if (!CanPerformTeleportOperations())
+            {
+                Logger?.LogWarning("当前状态不允许保存操作");
+                return;
+            }
+
+            if (HeroController.instance != null && GameManager.instance != null)
+            {
+                Vector3 currentPosition = HeroController.instance.transform.position;
+                string currentScene = GameManager.instance.sceneName;
+
+                // 生成唯一ID
+                string slotId = Guid.NewGuid().ToString();
+
+                // 创建扩展存档
+                var newSlot = new ExtendedSaveSlot(currentPosition, currentScene);
+                extendedSaveSlots[slotId] = newSlot;
+
+                SavePersistentData();
+                PlaySaveSound();
+                uiManager?.RefreshSlotList();
+
+                LogInfo($"UI保存新存档: {newSlot.displayName} 在 {currentScene} ({currentPosition.x:F1}, {currentPosition.y:F1})");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogError($"UI保存操作失败: {ex.Message}");
+        }
+    }
+
+    // UI事件处理 - 清空所有存档
+    private void OnUIClearAllSlots()
+    {
+        try
+        {
+            ClearAllSaveSlots();
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogError($"UI清空操作失败: {ex.Message}");
+        }
+    }
+
+    // UI事件处理 - 安全重生
+    private void OnUISafeRespawn()
+    {
+        try
+        {
+            if (!CanPerformTeleportOperations())
+            {
+                Logger?.LogWarning("当前状态不允许安全重生操作");
+                return;
+            }
+
+            // 先关闭所有界面，确保安全传送
+            CloseAllMenusBeforeTeleport();
+
+            RespawnToSafeEntryPoint();
+            LogInfo("从UI执行安全重生");
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogError($"UI安全重生操作失败: {ex.Message}");
+        }
+    }
+
+    // UI事件处理 - 传送到椅子
+    private void OnUIBenchTeleport()
+    {
+        try
+        {
+            if (!CanPerformTeleportOperations())
+            {
+                Logger?.LogWarning("当前状态不允许椅子传送操作");
+                return;
+            }
+
+            // 先关闭所有界面，确保安全传送
+            CloseAllMenusBeforeTeleport();
+
+            TeleportToBench();
+            LogInfo("从UI执行椅子传送");
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogError($"UI椅子传送操作失败: {ex.Message}");
+        }
+    }
+
+    // UI事件处理 - 预设坐标传送
+    private void OnUIHardcodedTeleport()
+    {
+        try
+        {
+            if (!CanPerformTeleportOperations())
+            {
+                Logger?.LogWarning("当前状态不允许预设传送操作");
+                return;
+            }
+
+            // 先关闭所有界面，确保安全传送
+            CloseAllMenusBeforeTeleport();
+
+            TeleportToHardcodedPosition();
+            LogInfo("从UI执行预设坐标传送");
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogError($"UI预设传送操作失败: {ex.Message}");
+        }
+    }
+
+    // 统一的菜单关闭方法 - 确保传送前所有界面都被关闭
+    private void CloseAllMenusBeforeTeleport()
+    {
+        try
+        {
+            // 关闭自定义UI界面
+            uiManager?.SetUIVisible(false);
+
+            // 检查并关闭ESC菜单（防止手柄呼出ESC菜单导致的冲突）
+            var uiManagerInstance = UIManager.instance;
+            if (uiManagerInstance != null && uiManagerInstance.uiState.Equals(UIState.PAUSED))
+            {
+                uiManagerInstance.SetState(UIState.PLAYING);
+                LogInfo("检测到ESC菜单打开，已强制关闭以避免传送冲突");
+            }
+
+            LogInfo("已关闭所有界面，准备安全传送");
+        }
+        catch (Exception menuEx)
+        {
+            Logger?.LogError($"关闭界面时发生错误: {menuEx.Message}");
+        }
+    }
+
+    // 传送到扩展存档位置
+    private void TeleportToExtendedSlot(ExtendedSaveSlot slot)
+    {
+        try
+        {
+            string currentScene = GameManager.instance?.sceneName ?? "";
+            Vector3 targetPosition = slot.position;
+            string targetScene = slot.scene;
+
+            LogInfo($"准备传送到扩展存档: {slot.displayName} -> {targetPosition} 在场景: {targetScene}");
+
+            // 检查是否需要切换场景
+            if (!string.IsNullOrEmpty(targetScene) && currentScene != targetScene)
+            {
+                LogInfo($"需要切换场景: {currentScene} -> {targetScene}");
+                StartCoroutine(TeleportWithSceneChange(targetScene, targetPosition));
+            }
+            else
+            {
+                // 在同一场景，直接传送
+                LogInfo("在当前场景传送");
+                PerformTeleport(targetPosition);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogError($"传送到扩展存档时发生错误: {ex.Message}");
+        }
+    }
+
+    // 获取所有存档数据（供UI使用）
+    public static Dictionary<string, ExtendedSaveSlot> GetAllSaveSlots()
+    {
+        var allSlots = new Dictionary<string, ExtendedSaveSlot>();
+
+        try
+        {
+            // 添加传统存档（转换为扩展格式）
+            foreach (var kvp in saveSlots)
+            {
+                if (kvp.Value.hasData)
+                {
+                    string traditionalId = $"traditional_{kvp.Key}";
+                    var extendedSlot = new ExtendedSaveSlot(kvp.Value);
+                    extendedSlot.displayName = $"快捷存档 {kvp.Key} | Slot {kvp.Key}";
+                    allSlots[traditionalId] = extendedSlot;
+                }
+            }
+
+            // 添加扩展存档
+            foreach (var kvp in extendedSaveSlots)
+            {
+                if (kvp.Value.hasData)
+                {
+                    allSlots[kvp.Key] = kvp.Value;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogError($"获取所有存档数据时发生错误: {ex.Message}");
+        }
+
+        return allSlots;
     }
 
     // 处理紧急重启输入（独立方法，优先级最高）
@@ -1255,6 +1816,13 @@ public class TeleportMod : BaseUnityPlugin
 
                 // 保存持久化数据
                 SavePersistentData();
+
+                // 如果UI界面可见，刷新界面显示
+                if (uiManager != null && uiManager.IsUIVisible)
+                {
+                    uiManager.RefreshSlotList();
+                    LogInfo($"UI界面已刷新，显示新保存的档位 {slotNumber}");
+                }
             }
             else
             {
@@ -1801,6 +2369,43 @@ public class TeleportMod : BaseUnityPlugin
         catch (Exception ex)
         {
             Logger?.LogError($"执行传送时发生错误: {ex.Message}");
+        }
+    }
+}
+
+// Harmony补丁类 - 拦截InputHandler的鼠标控制
+[HarmonyPatch(typeof(InputHandler), "SetCursorVisible")]
+public class InputHandlerPatch
+{
+    // 前缀补丁：在原方法执行前检查，如果返回false则阻止原方法执行
+    public static bool Prefix(bool value)
+    {
+        try
+        {
+            // 如果我们的UI界面打开，并且游戏试图隐藏鼠标，则阻止执行
+            var uiManager = TeleportUIManager.Instance;
+            if (uiManager != null && uiManager.IsUIVisible && !value)
+            {
+                // 日志记录被拦截的隐藏鼠标操作
+                if (Time.frameCount % 180 == 0) // 每3秒记录一次，避免日志刷屏
+                {
+                    TeleportMod.LogInfo("UI界面打开中，已阻止游戏隐藏鼠标");
+                }
+
+                // 强制保持鼠标可见
+                Cursor.visible = true;
+                Cursor.lockState = CursorLockMode.None;
+
+                return false; // 阻止原方法执行
+            }
+
+            return true; // 允许原方法执行
+        }
+        catch (Exception ex)
+        {
+            // 如果补丁出错，允许原方法执行以避免游戏崩溃
+            TeleportMod.Logger?.LogError($"InputHandler补丁执行时发生错误: {ex.Message}");
+            return true;
         }
     }
 }
