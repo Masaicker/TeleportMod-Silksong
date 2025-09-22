@@ -15,7 +15,7 @@ using GlobalEnums;
 using InControl;
 using HarmonyLib;
 
-[BepInPlugin("Mhz.TeleportMod", "Teleport Mod", "1.2.1")]
+[BepInPlugin("Mhz.TeleportMod", "Teleport Mod", "1.2.2")]
 public class TeleportMod : BaseUnityPlugin
 {
     public new static ManualLogSource? Logger;
@@ -569,9 +569,10 @@ public class TeleportMod : BaseUnityPlugin
                 return false;
             }
 
-            if (PlayerData.instance != null && PlayerData.instance.bindCutscenePlayed == false)
+            // 检查是否在特殊场景中
+            if (PlayerData.instance != null && !PlayerData.instance.bindCutscenePlayed)
             {
-                LogInfo("Teleport blocked");
+                LogInfo("角色在特殊场景中，禁止保存和传送 | Teleport blocked");
                 return false;
             }
 
@@ -2160,8 +2161,8 @@ public class TeleportMod : BaseUnityPlugin
         string? useEntryPoint = entryPointName;
         if (string.IsNullOrEmpty(useEntryPoint))
         {
-            // 如果没有指定入口点，尝试智能选择
-            useEntryPoint = GetBestEntryPointForScene(targetScene);
+            // 如果没有指定入口点，使用通用的门入口
+            useEntryPoint = "left1";
         }
 
         LogInfo($"使用入口点: {useEntryPoint}");
@@ -2245,31 +2246,6 @@ public class TeleportMod : BaseUnityPlugin
         }
     }
 
-    // 智能选择最佳入口点
-    private string GetBestEntryPointForScene(string sceneName)
-    {
-        try
-        {
-            // 常见的安全入口点名称列表（按优先级排序）
-            string[] commonEntryPoints = { "door1", "door_entrance", "entrance", "left1", "right1", "top1", "bot1" };
-
-            foreach (string entryPoint in commonEntryPoints)
-            {
-                // 这里可以根据需要添加更复杂的逻辑
-                // 比如检查特定场景的已知入口点
-                LogInfo($"尝试使用入口点: {entryPoint}");
-                return entryPoint;
-            }
-
-            // 如果都没有找到，返回默认值，GameManager会fallback到第一个可用的
-            return "door1";
-        }
-        catch (Exception ex)
-        {
-            Logger?.LogError($"选择最佳入口点时发生错误: {ex.Message}");
-            return "door1";
-        }
-    }
 
     // 安全传送方法，包含位置验证和错误恢复
     private void PerformSafeTeleport(Vector3 targetPosition)

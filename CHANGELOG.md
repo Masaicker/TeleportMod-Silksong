@@ -1,3 +1,7 @@
+# v1.2.2
+* 在特定剧情场景中禁止使用传送功能
+* Teleport disabled in certain cutscene scenarios
+
 # v1.2.1
 * 修复存档时间戳显示问题
 * Fixed save timestamp display issues
