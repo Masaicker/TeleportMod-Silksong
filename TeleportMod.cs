@@ -569,6 +569,12 @@ public class TeleportMod : BaseUnityPlugin
                 return false;
             }
 
+            if (PlayerData.instance != null && PlayerData.instance.bindCutscenePlayed == false)
+            {
+                LogInfo("Teleport blocked");
+                return false;
+            }
+
             // 检查是否正在重生
             if (GameManager.instance != null && GameManager.instance.RespawningHero)
             {
